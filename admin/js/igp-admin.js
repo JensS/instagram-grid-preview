@@ -212,34 +212,23 @@
                         
                         // Always update the data structure, even if moved within the same row
                         if (oldAbsIndex !== newAbsIndex) {
-                            const item = gridData[oldAbsIndex];
+                            // Get both items (swap them)
+                            const oldItem = gridData[oldAbsIndex];
+                            const newItem = gridData[newAbsIndex];
 
-                            // Create a complete representation of the grid
-                            const tempArray = [];
-                            const totalCells = columns * gridConfig.rows;
-                            
-                            // Fill with existing data or null
-                            for (let i = 0; i < totalCells; i++) {
-                                tempArray.push(gridData[i] || null);
+                            // Perform the swap
+                            if (oldItem) {
+                                gridData[newAbsIndex] = oldItem;
+                            } else {
+                                delete gridData[newAbsIndex];
                             }
-                            
-                            // Remove from old position
-                            tempArray.splice(oldAbsIndex, 1, null);
-                            
-                            // Insert at new position
-                            tempArray.splice(newAbsIndex, 0, item);
-                            
-                            // Remove the extra null that was pushed down
-                            tempArray.pop();
-                            
-                            // Rebuild gridData object, skipping nulls
-                            gridData = {};
-                            tempArray.forEach((item, index) => {
-                                if (item !== null) {
-                                    gridData[index] = item;
-                                }
-                            });
-                            
+
+                            if (newItem) {
+                                gridData[oldAbsIndex] = newItem;
+                            } else {
+                                delete gridData[oldAbsIndex];
+                            }
+
                             // Update all cells
                             updateGridDisplay();
                         }

@@ -3,7 +3,7 @@
  * Plugin Name: Instagram Grid Preview
  * Plugin URI: https://jenssage.com/plugins/instagram-grid-preview
  * Description: Create Instagram-style grid layouts with WordPress media images. Display them using shortcodes with mobile-responsive design.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Jens Sage
  * Author URI: https://jenssage.com
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (!defined('WPINC')) {
 /**
  * Currently plugin version.
  */
-define('IGP_VERSION', '1.0.1');
+define('IGP_VERSION', '1.0.2');
 
 /**
  * Plugin directory path

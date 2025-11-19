@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-01-19
+
+### Fixed
+- Fixed drag-and-drop bug where moving images would insert instead of swap, causing all subsequent images to shift down
+- Images now properly exchange positions when dragged to a new location
+
+## [1.0.1] - 2024-11-07
+
 ### Added
 - Plugin Update Checker integration for automatic updates from GitHub
 - GPL-2.0-or-later license file
 - WordPress.org compatible readme.txt file
-
-## [1.0.1] - 2024-11-07
 
 ### Security
 - Comprehensive security audit completed
@@ -53,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/JensS/instagram-grid-preview/releases/tag/v1.0.0
