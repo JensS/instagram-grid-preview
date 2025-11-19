@@ -1,0 +1,352 @@
+/**
+ * Admin styles for Instagram Grid Preview
+ */
+
+/* Grid Editor Styles */
+.igp-grid-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 600px;
+    margin: 20px 0;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.igp-grid-cell {
+    position: relative;
+    aspect-ratio: 1;
+    background-color: #fff;
+    border: 2px dashed #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+/* Aspect ratio variations */
+.igp-grid-editor[data-aspect-ratio="1:1"] .igp-grid-cell {
+    aspect-ratio: 1;
+}
+
+.igp-grid-editor[data-aspect-ratio="3:4"] .igp-grid-cell {
+    aspect-ratio: 3/4;
+}
+
+.igp-grid-cell:hover {
+    border-color: #0073aa;
+    background-color: #f8f9fa;
+}
+
+.igp-grid-cell.has-image {
+    border-style: solid;
+    border-color: #0073aa;
+}
+
+.igp-grid-cell.sortable-ghost {
+    opacity: 0.3;
+    transform: rotate(5deg);
+}
+
+.igp-grid-cell.sortable-chosen {
+    transform: scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.igp-grid-cell.sortable-drag {
+    cursor: grabbing !important;
+}
+
+.igp-grid-cell.has-image {
+    cursor: grab;
+}
+
+.igp-grid-cell.has-image:active {
+    cursor: grabbing;
+}
+
+.igp-grid-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.igp-grid-cell .igp-cell-placeholder {
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    padding: 10px;
+}
+
+.igp-grid-cell .igp-cell-placeholder:before {
+    content: "\f128";
+    font-family: dashicons;
+    font-size: 24px;
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+.igp-grid-cell .igp-remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Link indicator */
+.igp-link-indicator {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: rgba(0, 123, 255, 0.8);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.igp-link-indicator .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Row controls */
+.igp-grid-row {
+    position: relative;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.igp-row-controls {
+    position: absolute;
+    right: -130px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 10;
+}
+
+.igp-add-row-above,
+.igp-add-row-below {
+    min-width: 120px;
+    height: 30px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: #2271b1;
+    color: white;
+    border: 1px solid #135e96;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.igp-add-row-above:hover,
+.igp-add-row-below:hover {
+    background-color: #135e96;
+    border-color: #135e96;
+}
+
+.igp-cells-in-row {
+    display: grid;
+    width: 100%;
+    gap: 5px;
+    grid-template-columns: repeat(var(--columns, 3), 1fr);
+}
+
+.igp-grid-cell:hover .igp-remove-image {
+    display: flex;
+}
+
+.igp-grid-cell .igp-remove-image:hover {
+    background: rgba(220, 53, 69, 0.9);
+}
+
+/* Grid Controls */
+#igp-grid-controls {
+    margin: 20px 0;
+}
+
+#igp-grid-controls .button {
+    margin-right: 10px;
+}
+
+/* Grid Container */
+#igp-grid-container {
+    background: #f9f9f9;
+    padding: 20px;
+    padding-right: 140px; /* Make room for row control buttons */
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    position: relative;
+}
+
+.igp-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.igp-loading-overlay::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: igp-spin 1s linear infinite;
+}
+
+#igp-grid-editor.igp-loading-overlay {
+    display: flex;
+}
+
+/* Form Styles */
+#igp-grid-form .form-table th {
+    width: 150px;
+}
+
+/* Shortcode Display */
+.igp-shortcode-display {
+    background: #f1f1f1;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.igp-shortcode-display code {
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+/* Copy Button */
+.igp-copy-shortcode {
+    vertical-align: middle;
+}
+
+/* Success/Error Messages */
+.igp-message {
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.igp-message.success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.igp-message.error {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .igp-grid-editor {
+        max-width: 100%;
+    }
+    
+    .igp-grid-cell {
+        min-height: 80px;
+    }
+    
+    #igp-grid-container {
+        padding: 10px;
+    }
+}
+
+/* Loading State */
+.igp-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.igp-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: igp-spin 1s linear infinite;
+}
+
+@keyframes igp-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Grid Dimensions Display */
+.igp-grid-info {
+    margin: 10px 0;
+    padding: 10px;
+    background: #e7f3ff;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Media Library Modal Adjustments */
+.media-modal .media-frame-content {
+    bottom: 0;
+}
+
+/* Table Styles for Grid List */
+.wp-list-table .column-dimensions {
+    width: 100px;
+}
+
+.wp-list-table .column-shortcode {
+    width: 200px;
+}
+
+.wp-list-table .column-date {
+    width: 120px;
+}

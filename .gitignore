@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.ico
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Composer
+vendor/
+
+# WordPress
+wp-config.php
+.htaccess
+
+# Plugin Update Checker - exclude build artifacts and dev files
+plugin-update-checker/build/
+plugin-update-checker/phpcs.xml
+
+# Logs
+*.log

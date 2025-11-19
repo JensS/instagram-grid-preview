@@ -1,0 +1,234 @@
+/**
+ * Public styles for Instagram Grid Preview
+ * Mimics Instagram's mobile layout with square images and minimal gaps
+ */
+
+/* Main Grid Container */
+.igp-grid {
+    display: grid;
+    gap: 1px;
+    max-width: 375px; /* iPhone-like width */
+    margin: 0 auto;
+    background-color: #000; /* Black gaps like Instagram */
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Dynamic grid columns based on data attribute */
+.igp-grid[data-columns="1"] {
+    grid-template-columns: 1fr;
+}
+
+.igp-grid[data-columns="2"] {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.igp-grid[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.igp-grid[data-columns="4"] {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.igp-grid[data-columns="5"] {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.igp-grid[data-columns="6"] {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+/* Grid Cells */
+.igp-grid-cell {
+    position: relative;
+    aspect-ratio: 1; /* Perfect squares */
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+/* Aspect ratio variations */
+.igp-grid[data-aspect-ratio="1:1"] .igp-grid-cell {
+    aspect-ratio: 1;
+}
+
+.igp-grid[data-aspect-ratio="3:4"] .igp-grid-cell {
+    aspect-ratio: 3/4;
+}
+
+/* Grid Images */
+.igp-grid-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.igp-grid-cell a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.igp-grid-cell a:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+/* Hover effect */
+.igp-grid-cell:hover .igp-grid-image {
+    transform: scale(1.05);
+}
+
+/* Placeholder for empty cells */
+.igp-grid-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .igp-grid {
+        max-width: 100%;
+        margin: 0;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .igp-grid {
+        max-width: 450px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .igp-grid {
+        max-width: 500px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .igp-grid {
+        max-width: 600px;
+    }
+}
+
+/* Alternative layout for larger screens */
+@media (min-width: 768px) {
+    .igp-grid.igp-grid-large {
+        max-width: 800px;
+        gap: 2px;
+    }
+}
+
+/* Custom class support */
+.igp-grid.igp-grid-small {
+    max-width: 300px;
+    gap: 0.5px;
+}
+
+.igp-grid.igp-grid-medium {
+    max-width: 450px;
+    gap: 1px;
+}
+
+.igp-grid.igp-grid-large {
+    max-width: 600px;
+    gap: 2px;
+}
+
+/* Loading state */
+.igp-grid.loading {
+    opacity: 0.7;
+}
+
+.igp-grid.loading .igp-grid-cell {
+    background-color: #f0f0f0;
+    animation: igp-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes igp-pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Accessibility */
+.igp-grid-image {
+    border: none;
+    outline: none;
+}
+
+.igp-grid-cell:focus-within {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .igp-grid {
+        max-width: 100%;
+        gap: 2px;
+        background-color: #fff;
+    }
+    
+    .igp-grid-cell:hover .igp-grid-image {
+        transform: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .igp-grid {
+        background-color: #000;
+        gap: 2px;
+    }
+    
+    .igp-grid-placeholder {
+        background-color: #fff;
+        color: #000;
+        border: 1px solid #000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .igp-grid-image {
+        transition: none;
+    }
+    
+    .igp-grid-cell:hover .igp-grid-image {
+        transform: none;
+    }
+    
+    .igp-grid.loading .igp-grid-cell {
+        animation: none;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .igp-grid-placeholder {
+        background-color: #2d3748;
+        color: #a0aec0;
+    }
+}
