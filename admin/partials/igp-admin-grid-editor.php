@@ -31,57 +31,57 @@ $grid_id = $is_edit ? $grid['id'] : 0;
             <tbody>
                 <tr>
                     <th scope="row">
-                        <label for="grid-name"><?php _e('Grid Name', 'instagram-grid-preview'); ?></label>
+                        <label for="grid-name"><?php esc_html_e('Grid Name', 'instagram-grid-preview'); ?></label>
                     </th>
                     <td>
                         <input type="text" id="grid-name" name="grid_name" value="<?php echo esc_attr($grid_name); ?>" class="regular-text" required>
-                        <p class="description"><?php _e('Enter a name for this grid.', 'instagram-grid-preview'); ?></p>
+                        <p class="description"><?php esc_html_e('Enter a name for this grid.', 'instagram-grid-preview'); ?></p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="grid-description"><?php _e('Description', 'instagram-grid-preview'); ?></label>
+                        <label for="grid-description"><?php esc_html_e('Description', 'instagram-grid-preview'); ?></label>
                     </th>
                     <td>
                         <textarea id="grid-description" name="grid_description" rows="3" class="large-text"><?php echo esc_textarea($grid_description); ?></textarea>
-                        <p class="description"><?php _e('Optional description for this grid.', 'instagram-grid-preview'); ?></p>
+                        <p class="description"><?php esc_html_e('Optional description for this grid.', 'instagram-grid-preview'); ?></p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="grid-columns"><?php _e('Columns', 'instagram-grid-preview'); ?></label>
+                        <label for="grid-columns"><?php esc_html_e('Columns', 'instagram-grid-preview'); ?></label>
                     </th>
                     <td>
                         <input type="number" id="grid-columns" name="grid_columns" value="<?php echo esc_attr($grid_columns); ?>" min="1" max="6" class="small-text">
-                        <p class="description"><?php _e('Number of columns (1-6). Default is 3 for Instagram-style layout.', 'instagram-grid-preview'); ?></p>
+                        <p class="description"><?php esc_html_e('Number of columns (1-6). Default is 3 for Instagram-style layout.', 'instagram-grid-preview'); ?></p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="grid-rows"><?php _e('Rows', 'instagram-grid-preview'); ?></label>
+                        <label for="grid-rows"><?php esc_html_e('Rows', 'instagram-grid-preview'); ?></label>
                     </th>
                     <td>
                         <input type="number" id="grid-rows" name="grid_rows" value="<?php echo esc_attr($grid_rows); ?>" min="1" max="10" class="small-text">
-                        <p class="description"><?php _e('Number of rows (1-10).', 'instagram-grid-preview'); ?></p>
+                        <p class="description"><?php esc_html_e('Number of rows (1-10).', 'instagram-grid-preview'); ?></p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="grid-aspect-ratio"><?php _e('Aspect Ratio', 'instagram-grid-preview'); ?></label>
+                        <label for="grid-aspect-ratio"><?php esc_html_e('Aspect Ratio', 'instagram-grid-preview'); ?></label>
                     </th>
                     <td>
                         <select id="grid-aspect-ratio" name="grid_aspect_ratio" class="regular-text">
-                            <option value="1:1" <?php selected($grid_aspect_ratio, '1:1'); ?>><?php _e('1:1 (Square)', 'instagram-grid-preview'); ?></option>
-                            <option value="3:4" <?php selected($grid_aspect_ratio, '3:4'); ?>><?php _e('3:4 (Portrait)', 'instagram-grid-preview'); ?></option>
+                            <option value="1:1" <?php selected($grid_aspect_ratio, '1:1'); ?>><?php esc_html_e('1:1 (Square)', 'instagram-grid-preview'); ?></option>
+                            <option value="3:4" <?php selected($grid_aspect_ratio, '3:4'); ?>><?php esc_html_e('3:4 (Portrait)', 'instagram-grid-preview'); ?></option>
                         </select>
-                        <p class="description"><?php _e('Choose the aspect ratio for grid cells. 1:1 for classic Instagram, 3:4 for newer Instagram layout.', 'instagram-grid-preview'); ?></p>
+                        <p class="description"><?php esc_html_e('Choose the aspect ratio for grid cells. 1:1 for classic Instagram, 3:4 for newer Instagram layout.', 'instagram-grid-preview'); ?></p>
                     </td>
                 </tr>
             </tbody>
         </table>
         
-        <h2><?php _e('Grid Layout', 'instagram-grid-preview'); ?></h2>
-        <p><?php _e('Click on cells to add images. Drag and drop to reorder.', 'instagram-grid-preview'); ?></p>
+        <h2><?php esc_html_e('Grid Layout', 'instagram-grid-preview'); ?></h2>
+        <p><?php esc_html_e('Click on cells to add images. Drag and drop to reorder.', 'instagram-grid-preview'); ?></p>
         
         <div id="igp-grid-container">
             <div id="igp-grid-editor" class="igp-grid-editor" data-columns="<?php echo esc_attr($grid_columns); ?>" data-rows="<?php echo esc_attr($grid_rows); ?>">
@@ -92,16 +92,16 @@ $grid_id = $is_edit ? $grid['id'] : 0;
         <p class="submit">
             <input type="submit" name="submit" id="submit" class="button button-primary" value="<?php echo $is_edit ? __('Update Grid', 'instagram-grid-preview') : __('Save Grid', 'instagram-grid-preview'); ?>">
             <a href="<?php echo admin_url('admin.php?page=instagram-grids'); ?>" class="button button-secondary">
-                <?php _e('Cancel', 'instagram-grid-preview'); ?>
+                <?php esc_html_e('Cancel', 'instagram-grid-preview'); ?>
             </a>
         </p>
         
         <?php if ($is_edit): ?>
-            <h3><?php _e('Shortcode', 'instagram-grid-preview'); ?></h3>
-            <p><?php _e('Use this shortcode to display the grid on your site:', 'instagram-grid-preview'); ?></p>
+            <h3><?php esc_html_e('Shortcode', 'instagram-grid-preview'); ?></h3>
+            <p><?php esc_html_e('Use this shortcode to display the grid on your site:', 'instagram-grid-preview'); ?></p>
             <code>[instagram_grid id="<?php echo esc_attr($grid_id); ?>"]</code>
             <button type="button" class="button button-small igp-copy-shortcode" data-shortcode='[instagram_grid id="<?php echo esc_attr($grid_id); ?>"]'>
-                <?php _e('Copy Shortcode', 'instagram-grid-preview'); ?>
+                <?php esc_html_e('Copy Shortcode', 'instagram-grid-preview'); ?>
             </button>
         <?php endif; ?>
     </form>

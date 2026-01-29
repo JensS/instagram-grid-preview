@@ -180,7 +180,7 @@ class IGP_Admin {
         if ($grid_id > 0) {
             $grid = $this->grid_model->get_grid_data($grid_id);
             if (!$grid) {
-                wp_die(__('Grid not found.', 'instagram-grid-preview'));
+                wp_die(esc_html(__('Grid not found.', 'instagram-grid-preview')));
             }
         }
         
@@ -196,7 +196,7 @@ class IGP_Admin {
         check_ajax_referer('igp_nonce', 'nonce');
         
         if (!current_user_can('create_instagram_grids')) {
-            wp_die(__('You do not have permission to perform this action.', 'instagram-grid-preview'));
+            wp_die(esc_html(__('You do not have permission to perform this action.', 'instagram-grid-preview')));
         }
         
         $grid_id = isset($_POST['grid_id']) ? intval($_POST['grid_id']) : 0;
@@ -292,7 +292,7 @@ class IGP_Admin {
         check_ajax_referer('igp_nonce', 'nonce');
         
         if (!current_user_can('delete_instagram_grids')) {
-            wp_die(__('You do not have permission to perform this action.', 'instagram-grid-preview'));
+            wp_die(esc_html(__('You do not have permission to perform this action.', 'instagram-grid-preview')));
         }
         
         $grid_id = intval($_POST['grid_id']);
@@ -319,7 +319,7 @@ class IGP_Admin {
         check_ajax_referer('igp_nonce', 'nonce');
         
         if (!current_user_can('create_instagram_grids')) {
-            wp_die(__('You do not have permission to perform this action.', 'instagram-grid-preview'));
+            wp_die(esc_html(__('You do not have permission to perform this action.', 'instagram-grid-preview')));
         }
         
         $grid_id = intval($_POST['grid_id']);
@@ -331,6 +331,7 @@ class IGP_Admin {
             ));
         }
         
+        /* translators: %s: name of the original grid being copied */
         $new_name = sprintf(__('Copy of %s', 'instagram-grid-preview'), $grid['name']);
         
         $result = $this->grid_model->create_grid(
@@ -362,7 +363,7 @@ class IGP_Admin {
         check_ajax_referer('igp_nonce', 'nonce');
 
         if (!current_user_can('edit_instagram_grids')) {
-            wp_die(__('You do not have permission to perform this action.', 'instagram-grid-preview'));
+            wp_die(esc_html(__('You do not have permission to perform this action.', 'instagram-grid-preview')));
         }
 
         $grid_id = intval($_POST['grid_id']);

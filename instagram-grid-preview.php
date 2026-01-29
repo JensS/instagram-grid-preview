@@ -109,6 +109,7 @@ function igp_check_requirements() {
     
     // Check PHP version
     if (version_compare(PHP_VERSION, '7.4', '<')) {
+        /* translators: %s: current PHP version number */
         $errors[] = sprintf(
             __('Instagram Grid Preview requires PHP 7.4 or higher. You are running PHP %s.', 'instagram-grid-preview'),
             PHP_VERSION
@@ -119,6 +120,7 @@ function igp_check_requirements() {
     global $wp_version;
     if (igp_is_classicpress()) {
         if (version_compare(classicpress_version(), '1.0', '<')) {
+            /* translators: %s: current ClassicPress version number */
             $errors[] = sprintf(
                 __('Instagram Grid Preview requires ClassicPress 1.0 or higher. You are running ClassicPress %s.', 'instagram-grid-preview'),
                 classicpress_version()
@@ -126,6 +128,7 @@ function igp_check_requirements() {
         }
     } else {
         if (version_compare($wp_version, '5.0', '<')) {
+            /* translators: %s: current WordPress version number */
             $errors[] = sprintf(
                 __('Instagram Grid Preview requires WordPress 5.0 or higher. You are running WordPress %s.', 'instagram-grid-preview'),
                 $wp_version
