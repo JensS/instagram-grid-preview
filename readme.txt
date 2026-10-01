@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,13 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.0.3 - 2026-10-01 =
+
+**Security & Compliance**
+* Escaped `wp_die()` output with `esc_html__()` for improved XSS prevention
+* Replaced `_e()` with `esc_html_e()` for proper output escaping
+* Added translator comments for `sprintf` placeholders per WordPress i18n standards
+
 = 1.0.2 - 2025-01-19 =
 
 **Bug Fixes**
@@ -152,6 +159,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.0.3 =
+Security and internationalization compliance update. Recommended for all users.
 
 = 1.0.2 =
 Bug fix for drag-and-drop functionality. Images now properly swap positions when moved.

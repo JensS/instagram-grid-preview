@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-01
+
+### Security
+- Escaped `wp_die()` output with `esc_html__()` for improved XSS prevention
+- Replaced `_e()` with `esc_html_e()` for proper output escaping
+
+### Fixed
+- Added translator comments for `sprintf` placeholders per WordPress i18n standards
+
 ## [1.0.2] - 2025-01-19
 
 ### Fixed
@@ -59,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/JensS/instagram-grid-preview/releases/tag/v1.0.0
