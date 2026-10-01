@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,16 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.2.1 - 2026-10-01 =
+
+**Fixed**
+* Fixed a mediaelement JavaScript error that could appear after choosing a video poster image (media frames are now reused and DOM updates wait until the media modal closes)
+
+**Improved**
+* Grid tiles now use a responsive `srcset`/`sizes` (medium-large rendition) instead of a single image
+* The post viewer now loads a `large` rendition with `srcset` instead of the full-size original
+* @handles in captions are now highlighted in blue and link to Instagram
+
 = 1.2.0 - 2026-10-01 =
 
 **New Features**
@@ -205,6 +215,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Bug fix for a mediaelement error when setting video poster images, plus responsive image loading and blue @mention highlighting in captions.
 
 = 1.2.0 =
 Major update: grids are now public Instagram-style profile pages with a carousel/video post viewer. The [instagram_grid] shortcode has been replaced by the /instagram-grid/{id} page. Recommended for all users.

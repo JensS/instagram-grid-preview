@@ -472,6 +472,16 @@ video.igp-viewer-slide {
     margin-right: 6px;
 }
 
+.igp-mention {
+    color: #00376b;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.igp-mention:hover {
+    text-decoration: underline;
+}
+
 .igp-viewer-caption a {
     color: #00376b;
     font-weight: 600;

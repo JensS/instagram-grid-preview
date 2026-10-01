@@ -30,6 +30,8 @@ foreach ($posts as $index => $post) {
         $media[] = array(
             'type' => $slide['type'],
             'url' => $slide['url'],
+            'display_url' => IGP_Public::get_display_url($slide),
+            'display_srcset' => IGP_Public::get_display_srcset($slide),
             'thumbnail_url' => $slide['thumbnail_url'],
             'alt' => $slide['alt'],
         );

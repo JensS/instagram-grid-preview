@@ -47,6 +47,17 @@
             .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Escape caption text and turn @handles into blue Instagram links.
+     */
+    function formatCaption(text) {
+        return escapeHtml(text)
+            .replace(/(^|[^\w])@([A-Za-z0-9._]+)/g, function(match, prefix, handle) {
+                return prefix + '<a class="igp-mention" href="https://www.instagram.com/' + handle + '/" target="_blank" rel="noopener noreferrer">@' + handle + '</a>';
+            })
+            .replace(/\n/g, '<br>');
+    }
+
     function formatCount(n) {
         n = Math.max(0, parseInt(n, 10) || 0);
         if (n < 10000) {
@@ -139,7 +150,11 @@
         } else {
             el = document.createElement('img');
             el.className = 'igp-viewer-slide';
-            el.src = slide.url;
+            el.src = slide.display_url || slide.url;
+            if (slide.display_srcset) {
+                el.srcset = slide.display_srcset;
+                el.sizes = '(max-width: 768px) 100vw, 700px';
+            }
             el.alt = slide.alt || '';
         }
         mediaEl.appendChild(el);
@@ -183,7 +198,7 @@
         var captionHtml = '';
         if (post.caption) {
             captionHtml = '<div class="igp-viewer-caption"><span class="igp-viewer-caption-user">' +
-                escapeHtml(profile.username || '') + '</span>' + escapeHtml(post.caption).replace(/\n/g, '<br>') + '</div>';
+                escapeHtml(profile.username || '') + '</span>' + formatCaption(post.caption) + '</div>';
         }
         if (post.link_url) {
             captionHtml += '<div class="igp-viewer-caption" style="margin-top:8px"><a href="' +

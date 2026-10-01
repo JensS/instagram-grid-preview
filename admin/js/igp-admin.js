@@ -11,7 +11,9 @@
     let gridData = {};
     let sortableInstance = null;
     let mediaFrame = null;
+    let posterFrame = null;
     let avatarFrame = null;
+    let posterTarget = null;
     let currentCellIndex = null;
     let appendToCell = false;
     let activeModalIndex = null;
@@ -247,9 +249,15 @@
         };
     }
 
-    function openMediaLibrary(cellIndex, append) {
-        currentCellIndex = cellIndex;
-        appendToCell = !!append;
+    /**
+     * Return the shared "add media" frame, creating it once.
+     * Reusing a single frame avoids stacking media modals (and the
+     * mediaelement teardown errors that come with them).
+     */
+    function getMediaFrame() {
+        if (mediaFrame) {
+            return mediaFrame;
+        }
 
         mediaFrame = wp.media({
             title: 'Select media',
@@ -265,30 +273,43 @@
                 slides.push(attachmentToSlide(model.toJSON()));
             });
 
-            if (!slides.length || currentCellIndex === null) {
+            const cellIndex = currentCellIndex;
+            const append = appendToCell;
+            currentCellIndex = null;
+            appendToCell = false;
+
+            if (!slides.length || cellIndex === null) {
                 return;
             }
 
-            if (appendToCell && gridData[currentCellIndex]) {
-                gridData[currentCellIndex].media = (gridData[currentCellIndex].media || []).concat(slides);
-            } else {
-                gridData[currentCellIndex] = {
-                    media: slides,
-                    caption: '',
-                    likes: 0,
-                    comments: 0,
-                    link_url: ''
-                };
-            }
-
-            updateCellDisplay(currentCellIndex);
-            if (activeModalIndex === currentCellIndex) {
-                refreshModalSlides();
-            }
-            currentCellIndex = null;
+            // Defer so the media modal can finish closing before we touch
+            // the DOM.
+            setTimeout(function() {
+                if (append && gridData[cellIndex]) {
+                    gridData[cellIndex].media = (gridData[cellIndex].media || []).concat(slides);
+                } else {
+                    gridData[cellIndex] = {
+                        media: slides,
+                        caption: '',
+                        likes: 0,
+                        comments: 0,
+                        link_url: ''
+                    };
+                }
+                updateCellDisplay(cellIndex);
+                if (activeModalIndex === cellIndex) {
+                    refreshModalSlides();
+                }
+            }, 0);
         });
 
-        mediaFrame.open();
+        return mediaFrame;
+    }
+
+    function openMediaLibrary(cellIndex, append) {
+        currentCellIndex = cellIndex;
+        appendToCell = !!append;
+        getMediaFrame().open();
     }
 
     function getCellByIndex(index) {
@@ -532,6 +553,50 @@
     }
 
     /**
+     * Return the shared poster frame, creating it once.
+     */
+    function getPosterFrame() {
+        if (posterFrame) {
+            return posterFrame;
+        }
+
+        posterFrame = wp.media({
+            title: 'Select poster image',
+            button: { text: 'Use as poster' },
+            multiple: false,
+            library: { type: 'image' }
+        });
+
+        posterFrame.on('select', function() {
+            const att = posterFrame.state().get('selection').first().toJSON();
+            const target = posterTarget;
+            posterTarget = null;
+
+            let url = att.url;
+            if (att.sizes) {
+                url = (att.sizes.large || att.sizes.medium_large || att.sizes.medium || att.sizes.thumbnail || {}).url || att.url;
+            }
+
+            // Defer so the media modal can finish closing before we touch
+            // the DOM.
+            setTimeout(function() {
+                if (!target) {
+                    return;
+                }
+                const post = gridData[target.cell];
+                if (post && post.media && post.media[target.slide]) {
+                    post.media[target.slide].thumbnail_url = url;
+                    post.media[target.slide].poster_id = att.id;
+                    updateCellDisplay(target.cell);
+                    refreshModalSlides();
+                }
+            }, 0);
+        });
+
+        return posterFrame;
+    }
+
+    /**
      * Choose a poster image for a video slide.
      */
     function openPosterPicker(cellIndex, slideIndex) {
@@ -540,26 +605,8 @@
             return;
         }
 
-        const frame = wp.media({
-            title: 'Select poster image',
-            button: { text: 'Use as poster' },
-            multiple: false,
-            library: { type: 'image' }
-        });
-
-        frame.on('select', function() {
-            const att = frame.state().get('selection').first().toJSON();
-            let url = att.url;
-            if (att.sizes) {
-                url = (att.sizes.large || att.sizes.medium_large || att.sizes.medium || att.sizes.thumbnail || {}).url || att.url;
-            }
-            post.media[slideIndex].thumbnail_url = url;
-            post.media[slideIndex].poster_id = att.id;
-            updateCellDisplay(cellIndex);
-            refreshModalSlides();
-        });
-
-        frame.open();
+        posterTarget = { cell: cellIndex, slide: slideIndex };
+        getPosterFrame().open();
     }
 
     // ---------- Avatar picker ----------
@@ -607,17 +654,25 @@
 
         // Avatar
         $('#igp-select-avatar').on('click', function() {
-            avatarFrame = wp.media({
-                title: 'Select avatar',
-                button: { text: 'Use image' },
-                multiple: false,
-                library: { type: 'image' }
-            });
-            avatarFrame.on('select', function() {
-                const att = avatarFrame.state().get('selection').first().toJSON();
-                $('#igp-profile-avatar-url').val(att.url);
-                updateAvatarPreview(att.url);
-            });
+            if (!avatarFrame) {
+                avatarFrame = wp.media({
+                    title: 'Select avatar',
+                    button: { text: 'Use image' },
+                    multiple: false,
+                    library: { type: 'image' }
+                });
+                avatarFrame.on('select', function() {
+                    const att = avatarFrame.state().get('selection').first().toJSON();
+                    let url = att.url;
+                    if (att.sizes) {
+                        url = (att.sizes.medium || att.sizes.thumbnail || {}).url || att.url;
+                    }
+                    setTimeout(function() {
+                        $('#igp-profile-avatar-url').val(url);
+                        updateAvatarPreview(url);
+                    }, 0);
+                });
+            }
             avatarFrame.open();
         });
 

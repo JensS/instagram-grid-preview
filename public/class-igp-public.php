@@ -168,7 +168,7 @@ class IGP_Public {
                 $post = isset($posts[$index]) ? $posts[$index] : null;
 
                 if ($post) {
-                    $html .= self::render_cell($post, $index);
+                    $html .= self::render_cell($post, $index, $columns);
                 } else {
                     $html .= '<div class="igp-grid-cell igp-grid-cell--empty"></div>';
                 }
@@ -188,7 +188,7 @@ class IGP_Public {
      * @param    int      $index    Cell index
      * @return   string   HTML output
      */
-    private static function render_cell($post, $index) {
+    private static function render_cell($post, $index, $columns = 3) {
         $first = $post['media'][0];
         $thumb = $first['thumbnail_url'];
         $alt = $first['alt'];
@@ -196,7 +196,12 @@ class IGP_Public {
         $html = '<div class="igp-grid-cell" role="button" tabindex="0" data-post-index="' . esc_attr($index) . '" aria-label="' . esc_attr($alt !== '' ? $alt : __('Open post', 'instagram-grid-preview')) . '">';
 
         if ($thumb) {
-            $html .= '<img src="' . esc_url($thumb) . '" alt="' . esc_attr($alt) . '" class="igp-grid-image" loading="lazy" />';
+            list($src, $srcset, $sizes) = self::get_grid_image_attrs($first, $columns);
+            $html .= '<img src="' . esc_url($src) . '"';
+            if ($srcset) {
+                $html .= ' srcset="' . esc_attr($srcset) . '" sizes="' . esc_attr($sizes) . '"';
+            }
+            $html .= ' alt="' . esc_attr($alt) . '" class="igp-grid-image" loading="lazy" />';
         } else {
             // Video without a poster image.
             $html .= '<span class="igp-grid-media-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>';
@@ -258,6 +263,92 @@ class IGP_Public {
         $html .= '</span>';
 
         return $html;
+    }
+
+    /**
+     * Build the src/srcset/sizes for a grid tile image.
+     *
+     * Uses a medium-large rendition plus a responsive srcset when the
+     * slide still references a WordPress image attachment.
+     *
+     * @since    1.2.0
+     * @param    array    $slide      Media slide
+     * @param    int      $columns    Number of grid columns
+     * @return   array    array($src, $srcset, $sizes)
+     */
+    private static function get_grid_image_attrs($slide, $columns) {
+        $src = $slide['thumbnail_url'];
+        $srcset = '';
+        $id = isset($slide['id']) ? intval($slide['id']) : 0;
+
+        if ('image' === $slide['type'] && $id > 0 && function_exists('wp_attachment_is_image') && wp_attachment_is_image($id)) {
+            $sized = wp_get_attachment_image_src($id, 'medium_large');
+            if ($sized) {
+                $src = $sized[0];
+            }
+            if (function_exists('wp_get_attachment_image_srcset')) {
+                $maybe = wp_get_attachment_image_srcset($id, 'medium_large');
+                if ($maybe) {
+                    $srcset = $maybe;
+                }
+            }
+        }
+
+        $columns = max(1, intval($columns));
+        $vw = (int) round(100 / $columns);
+        $desktop = (int) round(935 / $columns);
+        $sizes = '(max-width: 480px) ' . $vw . 'vw, ' . $desktop . 'px';
+
+        return array($src, $srcset, $sizes);
+    }
+
+    /**
+     * Get the URL used by the post viewer for a slide.
+     *
+     * Images use a large rendition instead of the full-size original;
+     * videos use the video file itself.
+     *
+     * @since    1.2.0
+     * @param    array    $slide    Media slide
+     * @return   string   Display URL
+     */
+    public static function get_display_url($slide) {
+        if ('video' === $slide['type']) {
+            return $slide['url'];
+        }
+
+        $id = isset($slide['id']) ? intval($slide['id']) : 0;
+        if ($id > 0 && function_exists('wp_get_attachment_image_src')) {
+            $sized = wp_get_attachment_image_src($id, 'large');
+            if ($sized) {
+                return $sized[0];
+            }
+        }
+
+        return $slide['url'];
+    }
+
+    /**
+     * Get the srcset used by the post viewer for a slide.
+     *
+     * @since    1.2.0
+     * @param    array    $slide    Media slide
+     * @return   string   srcset or empty string
+     */
+    public static function get_display_srcset($slide) {
+        if ('video' === $slide['type']) {
+            return '';
+        }
+
+        $id = isset($slide['id']) ? intval($slide['id']) : 0;
+        if ($id > 0 && function_exists('wp_get_attachment_image_srcset')) {
+            $srcset = wp_get_attachment_image_srcset($id, 'large');
+            if ($srcset) {
+                return $srcset;
+            }
+        }
+
+        return '';
     }
 
     /**

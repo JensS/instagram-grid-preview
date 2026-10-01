@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-01
+
+### Fixed
+- Fixed a `mediaelement` JavaScript error that could appear after choosing a video poster image (media frames are now reused and DOM updates are deferred until the media modal closes)
+
+### Changed
+- Grid tiles now use a responsive `srcset`/`sizes` (medium-large rendition) instead of a single image
+- The post viewer now loads a `large` rendition with `srcset` instead of the full-size original
+
+### Added
+- `@handles` in captions are highlighted in blue and link to Instagram
+
 ## [1.2.0] - 2026-10-01
 
 ### Added
@@ -101,7 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.2...v1.0.3
