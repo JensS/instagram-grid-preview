@@ -127,8 +127,9 @@
             const rowControls = document.createElement('div');
             rowControls.className = 'igp-row-controls';
             rowControls.innerHTML = `
-                <button type="button" class="button button-small igp-add-row-above" data-row="${row}" title="Add new row above this row">Add Row Above</button>
-                <button type="button" class="button button-small igp-add-row-below" data-row="${row}" title="Add new row below this row">Add Row Below</button>
+                <button type="button" class="igp-row-btn igp-add-row-above" data-row="${row}" title="Add row above" aria-label="Add row above"><span class="dashicons dashicons-insert-before"></span></button>
+                <button type="button" class="igp-row-btn igp-add-row-below" data-row="${row}" title="Add row below" aria-label="Add row below"><span class="dashicons dashicons-insert-after"></span></button>
+                ${rows > 1 ? `<button type="button" class="igp-row-btn igp-delete-row" data-row="${row}" title="Delete row" aria-label="Delete row"><span class="dashicons dashicons-trash"></span></button>` : ''}
             `;
             rowContainer.appendChild(rowControls);
 
@@ -809,6 +810,11 @@
             addRow(parseInt($(this).data('row')) + 1);
         });
 
+        $(document).on('click', '.igp-delete-row', function(e) {
+            e.preventDefault();
+            deleteRow(parseInt($(this).data('row')));
+        });
+
         // Avatar
         $('#igp-select-avatar').on('click', function() {
             if (!avatarFrame) {
@@ -837,6 +843,50 @@
             $('#igp-profile-avatar-url').val('');
             updateAvatarPreview('');
         });
+    }
+
+    function deleteRow(position) {
+        if (isRegeneratingGrid) return;
+
+        const columns = gridConfig.columns;
+        const currentRows = gridConfig.rows;
+
+        // Never remove the last remaining row.
+        if (currentRows <= 1) {
+            return;
+        }
+
+        const hasContent = Object.keys(gridData).some(function(key) {
+            return Math.floor(parseInt(key, 10) / columns) === position;
+        });
+
+        if (hasContent && !window.confirm('Delete this row and the posts in it?')) {
+            return;
+        }
+
+        const newGridData = {};
+
+        Object.keys(gridData).forEach(function(key) {
+            const oldIndex = parseInt(key, 10);
+            const oldRow = Math.floor(oldIndex / columns);
+            const oldCol = oldIndex % columns;
+
+            // Drop the cells in the deleted row.
+            if (oldRow === position) {
+                return;
+            }
+
+            const newIndex = oldRow > position
+                ? (oldRow - 1) * columns + oldCol
+                : oldIndex;
+
+            newGridData[newIndex] = gridData[key];
+        });
+
+        gridData = newGridData;
+        gridConfig.rows = currentRows - 1;
+        syncConfigToDOM();
+        generateGrid();
     }
 
     function addRow(position) {
