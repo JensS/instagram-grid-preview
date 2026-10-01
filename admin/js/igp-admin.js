@@ -247,6 +247,7 @@
             id: att.id,
             url: att.url,
             thumbnail_url: thumb,
+            poster_url: '',
             alt: att.alt || att.title || ''
         };
     }
@@ -285,6 +286,7 @@
                 id: 0,
                 url: '',
                 thumbnail_url: video.thumbnailUrl || '',
+                poster_url: '',
                 alt: video.title || ''
             });
         });
@@ -414,7 +416,7 @@
             cell.removeAttribute('title');
 
             const first = media[0];
-            const thumb = first.thumbnail_url || '';
+            const thumb = first.poster_url || first.thumbnail_url || '';
             let html = '';
             if (thumb) {
                 html += '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(first.alt || '') + '" />';
@@ -597,15 +599,20 @@
         $slides.empty();
         (post.media || []).forEach(function(slide, i) {
             const $item = $('<div class="igp-slide-item"></div>');
+            const preview = slide.poster_url || slide.thumbnail_url;
 
-            if (slide.thumbnail_url) {
-                $item.append('<img src="' + escapeHtml(slide.thumbnail_url) + '" alt="">');
+            if (preview) {
+                $item.append('<img src="' + escapeHtml(preview) + '" alt="">');
             } else {
                 $item.append('<span class="igp-slide-empty">' + (slide.type === 'video' ? IGP_ICONS.video : IGP_ICONS.plus) + '</span>');
             }
 
             if (slide.type === 'video') {
-                $item.append('<button type="button" class="igp-slide-poster" data-slide="' + i + '" title="Set poster image">' + IGP_ICONS.camera + '</button>');
+                $item.append('<button type="button" class="igp-slide-poster" data-slide="' + i + '" title="Set custom poster image">' + IGP_ICONS.camera + '</button>');
+                if (slide.poster_url) {
+                    $item.addClass('has-custom-poster');
+                    $item.append('<button type="button" class="igp-slide-poster-reset" data-slide="' + i + '" title="Remove custom poster">' + IGP_ICONS.trash + '</button>');
+                }
             }
 
             if (slide.source === 'bunny') {
@@ -632,6 +639,17 @@
 
         $slides.off('click', '.igp-slide-poster').on('click', '.igp-slide-poster', function() {
             openPosterPicker(activeModalIndex, parseInt($(this).data('slide'), 10));
+        });
+
+        $slides.off('click', '.igp-slide-poster-reset').on('click', '.igp-slide-poster-reset', function() {
+            const slideIndex = parseInt($(this).data('slide'), 10);
+            const current = gridData[activeModalIndex];
+            if (current && current.media && current.media[slideIndex]) {
+                delete current.media[slideIndex].poster_url;
+                delete current.media[slideIndex].poster_id;
+                updateCellDisplay(activeModalIndex);
+                refreshModalSlides();
+            }
         });
     }
 
@@ -668,7 +686,7 @@
                 }
                 const post = gridData[target.cell];
                 if (post && post.media && post.media[target.slide]) {
-                    post.media[target.slide].thumbnail_url = url;
+                    post.media[target.slide].poster_url = url;
                     post.media[target.slide].poster_id = att.id;
                     updateCellDisplay(target.cell);
                     refreshModalSlides();

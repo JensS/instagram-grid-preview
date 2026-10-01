@@ -772,3 +772,35 @@
     text-transform: uppercase;
     pointer-events: none;
 }
+
+/* Custom poster state on a slide */
+.igp-slide-item.has-custom-poster {
+    outline: 2px solid var(--igp-accent, #0095f6);
+    outline-offset: -2px;
+}
+
+.igp-slide-poster-reset {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.igp-slide-poster-reset:hover {
+    background: #ed4956;
+}
+
+.igp-slide-poster-reset svg {
+    width: 12px;
+    height: 12px;
+}

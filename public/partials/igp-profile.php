@@ -47,6 +47,8 @@ foreach ($posts as $index => $post) {
             if (!empty($item['hls'])) {
                 $needs_hls = true;
             }
+        } elseif (!empty($slide['poster_url'])) {
+            $item['thumbnail_url'] = $slide['poster_url'];
         }
 
         $media[] = $item;

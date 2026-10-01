@@ -196,6 +196,8 @@ class IGP_Public {
             if ($poster) {
                 $first['thumbnail_url'] = $poster;
             }
+        } elseif (!empty($first['poster_url'])) {
+            $first['thumbnail_url'] = $first['poster_url'];
         }
 
         $thumb = $first['thumbnail_url'];

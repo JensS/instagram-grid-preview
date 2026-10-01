@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-01
+
+### Fixed
+- Custom poster images can now be set for Bunny Stream videos (and uploaded videos) via the camera button on a video slide. A custom poster is highlighted and can be removed to fall back to the Bunny thumbnail
+
 ## [1.3.0] - 2026-10-01
 
 ### Added
@@ -123,7 +128,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.1.0...v1.2.0

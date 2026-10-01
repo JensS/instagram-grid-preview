@@ -187,6 +187,11 @@ class IGP_Bunny {
      * @return   string
      */
     public static function resolve_poster($slide) {
+        // An explicitly chosen custom poster always wins.
+        if (!empty($slide['poster_url'])) {
+            return $slide['poster_url'];
+        }
+
         $video_id = isset($slide['bunny_id']) ? $slide['bunny_id'] : '';
         $custom = isset($slide['thumbnail_url']) ? $slide['thumbnail_url'] : '';
 

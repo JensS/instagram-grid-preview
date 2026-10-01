@@ -471,6 +471,7 @@ class IGP_Admin {
             'id' => isset($slide['id']) ? intval($slide['id']) : 0,
             'url' => $url,
             'thumbnail_url' => $thumb,
+            'poster_url' => !empty($slide['poster_url']) ? esc_url_raw($slide['poster_url']) : '',
             'alt' => isset($slide['alt']) ? sanitize_text_field($slide['alt']) : '',
         );
     }

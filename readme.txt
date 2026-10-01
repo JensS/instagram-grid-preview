@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,11 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.3.1 - 2026-10-01 =
+
+**Fixed**
+* You can now set a custom poster image for Bunny Stream videos (and uploaded videos) from the post editor. The camera button on a video slide sets a custom poster, which is highlighted and can be removed to fall back to the Bunny thumbnail
+
 = 1.3.0 - 2026-10-01 =
 
 **New Features**
@@ -225,6 +230,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.3.1 =
+Fix: set a custom poster image for Bunny videos (and uploaded videos) from the post editor.
 
 = 1.3.0 =
 Adds Bunny Stream video support. Also fixes a database migration bug that could cause "Failed to save grid" after updating on existing installs. Recommended for all users.

@@ -323,6 +323,7 @@ class IGP_Grid_Model {
                     'id' => isset($slide['id']) ? intval($slide['id']) : 0,
                     'url' => $url,
                     'thumbnail_url' => $thumb,
+                    'poster_url' => !empty($slide['poster_url']) ? $slide['poster_url'] : '',
                     'alt' => isset($slide['alt']) ? $slide['alt'] : '',
                 );
             }
@@ -337,6 +338,7 @@ class IGP_Grid_Model {
                 'id' => isset($cell['image_id']) ? intval($cell['image_id']) : 0,
                 'url' => $cell['image_url'],
                 'thumbnail_url' => !empty($cell['thumbnail_url']) ? $cell['thumbnail_url'] : $cell['image_url'],
+                'poster_url' => '',
                 'alt' => isset($cell['image_alt']) ? $cell['image_alt'] : '',
             );
         }

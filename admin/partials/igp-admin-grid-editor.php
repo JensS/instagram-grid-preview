@@ -172,7 +172,7 @@ $profile_url = $is_edit ? home_url('/instagram-grid/' . intval($grid_id) . '/') 
 
         <h2><?php esc_html_e('Posts', 'instagram-grid-preview'); ?></h2>
         <p><?php esc_html_e('Click an empty tile to add images or a video. Click a filled tile to edit the caption, media type, likes and comments. Drag and drop to reorder.', 'instagram-grid-preview'); ?></p>
-        <p class="description"><?php esc_html_e('Videos have no native poster image in WordPress/ClassicPress. Open a post and use the camera button on a video slide to choose the poster image shown in the grid and viewer.', 'instagram-grid-preview'); ?></p>
+        <p class="description"><?php esc_html_e('Open a post and use the camera button on any video slide (uploaded or Bunny) to set a custom poster image shown in the grid and viewer. A custom poster is highlighted and can be removed with the trash button to fall back to the Bunny thumbnail.', 'instagram-grid-preview'); ?></p>
 
         <div id="igp-grid-container">
             <div id="igp-grid-editor" class="igp-grid-editor" data-columns="<?php echo esc_attr($grid_columns); ?>" data-rows="<?php echo esc_attr($grid_rows); ?>" data-aspect-ratio="<?php echo esc_attr($grid_aspect_ratio); ?>">
