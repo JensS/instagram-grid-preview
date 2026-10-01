@@ -804,3 +804,22 @@
     width: 12px;
     height: 12px;
 }
+
+/* Reorder slides in the post modal */
+.igp-slide-item {
+    cursor: grab;
+}
+
+.igp-slide-item:active {
+    cursor: grabbing;
+}
+
+.igp-slide-ghost {
+    opacity: 0.4;
+}
+
+.igp-slide-chosen {
+    transform: scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}

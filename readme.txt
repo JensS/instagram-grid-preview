@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,11 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.3.2 - 2026-10-01 =
+
+**Added**
+* Reorder the slides within a post by drag and drop in the post editor
+
 = 1.3.1 - 2026-10-01 =
 
 **Fixed**
@@ -230,6 +235,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.3.2 =
+Adds drag-and-drop reordering of the slides within a post.
 
 = 1.3.1 =
 Fix: set a custom poster image for Bunny videos (and uploaded videos) from the post editor.

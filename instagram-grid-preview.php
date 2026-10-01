@@ -3,7 +3,7 @@
  * Plugin Name: Instagram Grid Preview
  * Plugin URI: https://jenssage.com/plugins/instagram-grid-preview
  * Description: Turn your WordPress media library into public, Instagram-style profile pages with a carousel/video post viewer.
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: Jens Sage
  * Author URI: https://jenssage.com
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (!defined('WPINC')) {
 /**
  * Currently plugin version.
  */
-define('IGP_VERSION', '1.3.1');
+define('IGP_VERSION', '1.3.2');
 
 /**
  * Database schema version.

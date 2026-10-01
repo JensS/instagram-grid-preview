@@ -10,6 +10,7 @@
 
     let gridData = {};
     let sortableInstance = null;
+    let slidesSortable = null;
     let mediaFrame = null;
     let posterFrame = null;
     let avatarFrame = null;
@@ -549,6 +550,10 @@
 
         function closeModal() {
             $(document).off('keyup.igpModal');
+            if (slidesSortable) {
+                slidesSortable.destroy();
+                slidesSortable = null;
+            }
             activeModalIndex = null;
             $modal.remove();
         }
@@ -599,6 +604,7 @@
         $slides.empty();
         (post.media || []).forEach(function(slide, i) {
             const $item = $('<div class="igp-slide-item"></div>');
+            $item.attr('data-slide', i);
             const preview = slide.poster_url || slide.thumbnail_url;
 
             if (preview) {
@@ -629,6 +635,10 @@
             current.media.splice(slideIndex, 1);
             if (!current.media.length) {
                 removeImage(activeModalIndex);
+                if (slidesSortable) {
+                    slidesSortable.destroy();
+                    slidesSortable = null;
+                }
                 $('.igp-modal-backdrop').remove();
                 activeModalIndex = null;
                 return;
@@ -651,6 +661,52 @@
                 refreshModalSlides();
             }
         });
+
+        // Allow reordering slides by drag and drop.
+        if (slidesSortable) {
+            slidesSortable.destroy();
+            slidesSortable = null;
+        }
+
+        if (typeof Sortable !== 'undefined' && $slides[0]) {
+            slidesSortable = Sortable.create($slides[0], {
+                animation: 150,
+                ghostClass: 'igp-slide-ghost',
+                chosenClass: 'igp-slide-chosen',
+                draggable: '.igp-slide-item',
+                filter: '.igp-slide-remove, .igp-slide-poster, .igp-slide-poster-reset',
+                onEnd: function() {
+                    const cellIndex = activeModalIndex;
+                    const post = gridData[cellIndex];
+                    if (!post || !post.media) {
+                        return;
+                    }
+
+                    const oldMedia = post.media;
+                    const reordered = [];
+                    $slides.children('.igp-slide-item').each(function() {
+                        const original = parseInt($(this).attr('data-slide'), 10);
+                        if (!isNaN(original) && oldMedia[original]) {
+                            reordered.push(oldMedia[original]);
+                        }
+                    });
+
+                    if (reordered.length !== oldMedia.length) {
+                        return;
+                    }
+
+                    // Defer so Sortable finishes its DOM work first.
+                    setTimeout(function() {
+                        if (!gridData[cellIndex]) {
+                            return;
+                        }
+                        gridData[cellIndex].media = reordered;
+                        updateCellDisplay(cellIndex);
+                        refreshModalSlides();
+                    }, 0);
+                }
+            });
+        }
     }
 
     /**
