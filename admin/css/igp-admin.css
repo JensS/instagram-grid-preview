@@ -1,70 +1,127 @@
 /**
  * Admin styles for Instagram Grid Preview
+ *
+ * The grid editor mirrors Instagram's profile grid: white background,
+ * square tiles, a thin gap, no rounded corners, corner media badges and a
+ * dark hover overlay with like/comment counts.
  */
 
-/* Grid Editor Styles */
-.igp-grid-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 600px;
-    margin: 20px 0;
-    background-color: #f0f0f0;
-    padding: 10px;
-    border-radius: 8px;
+/* ---------- Palette ---------- */
+.igp-grid-editor,
+#igp-grid-container,
+.igp-modal {
+    --igp-border: #dbdbdb;
+    --igp-text: #262626;
+    --igp-muted: #8e8e8e;
+    --igp-accent: #0095f6;
+    --igp-placeholder: #efefef;
+    --igp-gap: 4px;
 }
 
+/* ---------- Grid container ---------- */
+#igp-grid-container {
+    position: relative;
+    max-width: 640px;
+    margin: 20px 0;
+    padding: 0;
+    padding-right: 130px; /* Make room for the row control buttons */
+    background: #fff;
+    border: 1px solid var(--igp-border, #dbdbdb);
+    border-radius: 0;
+}
+
+#igp-grid-editor {
+    display: block;
+    width: 100%;
+}
+
+/* ---------- Rows ---------- */
+.igp-grid-row {
+    position: relative;
+    margin: 0 0 var(--igp-gap, 4px) 0;
+    padding: 0;
+}
+
+.igp-grid-row:last-child {
+    margin-bottom: 0;
+}
+
+.igp-cells-in-row {
+    display: grid;
+    width: 100%;
+    gap: var(--igp-gap, 4px);
+    grid-template-columns: repeat(var(--columns, 3), 1fr);
+}
+
+/* Row controls - appear on row hover */
+.igp-row-controls {
+    position: absolute;
+    right: -122px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.igp-grid-row:hover .igp-row-controls {
+    opacity: 1;
+}
+
+.igp-add-row-above,
+.igp-add-row-below {
+    min-width: 112px;
+    height: 28px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    background-color: #fff;
+    color: var(--igp-text, #262626);
+    border: 1px solid var(--igp-border, #dbdbdb);
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.igp-add-row-above:hover,
+.igp-add-row-below:hover {
+    background-color: #fafafa;
+}
+
+/* ---------- Cells ---------- */
 .igp-grid-cell {
     position: relative;
     aspect-ratio: 1;
-    background-color: #fff;
-    border: 2px dashed #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 120px;
+    background-color: var(--igp-placeholder, #efefef);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    min-height: 0;
 }
 
-/* Aspect ratio variations */
 .igp-grid-editor[data-aspect-ratio="1:1"] .igp-grid-cell {
     aspect-ratio: 1;
 }
 
 .igp-grid-editor[data-aspect-ratio="3:4"] .igp-grid-cell {
-    aspect-ratio: 3/4;
+    aspect-ratio: 3 / 4;
 }
 
 .igp-grid-cell:hover {
-    border-color: #0073aa;
-    background-color: #f8f9fa;
-}
-
-.igp-grid-cell.has-image {
-    border-style: solid;
-    border-color: #0073aa;
-}
-
-.igp-grid-cell.sortable-ghost {
-    opacity: 0.3;
-    transform: rotate(5deg);
-}
-
-.igp-grid-cell.sortable-chosen {
-    transform: scale(1.05);
-    z-index: 1000;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.igp-grid-cell.sortable-drag {
-    cursor: grabbing !important;
+    filter: brightness(0.97);
 }
 
 .igp-grid-cell.has-image {
     cursor: grab;
+    filter: none;
 }
 
 .igp-grid-cell.has-image:active {
@@ -72,127 +129,171 @@
 }
 
 .igp-grid-cell img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 2px;
+    border-radius: 0;
 }
 
-.igp-grid-cell .igp-cell-placeholder {
-    color: #666;
-    font-size: 14px;
+/* Empty cell - Instagram-style "add" tile */
+.igp-cell-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--igp-muted, #8e8e8e);
+    font-size: 12px;
     text-align: center;
     padding: 10px;
 }
 
-.igp-grid-cell .igp-cell-placeholder:before {
-    content: "\f128";
-    font-family: dashicons;
-    font-size: 24px;
-    display: block;
-    margin-bottom: 5px;
-    color: #ccc;
+.igp-cell-placeholder svg {
+    width: 26px;
+    height: 26px;
 }
 
-.igp-grid-cell .igp-remove-image {
+.igp-grid-cell:hover .igp-cell-placeholder {
+    color: var(--igp-text, #262626);
+}
+
+/* ---------- Hover overlay + stats ---------- */
+.igp-cell-overlay {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    opacity: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.igp-grid-cell.has-image:hover .igp-cell-overlay {
+    opacity: 1;
+}
+
+.igp-cell-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.igp-cell-stat svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ---------- Corner media badge ---------- */
+.igp-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 4;
+    display: flex;
+    color: #fff;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.igp-badge svg {
+    width: 19px;
+    height: 19px;
+}
+
+/* ---------- Link badge ---------- */
+.igp-cell-linkbadge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    pointer-events: none;
+}
+
+.igp-cell-linkbadge svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* ---------- Cell action buttons ---------- */
+.igp-cell-actions {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 5;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.igp-grid-cell.has-image:hover .igp-cell-actions {
+    opacity: 1;
+}
+
+.igp-cell-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: none;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
     cursor: pointer;
-    font-size: 12px;
-    display: none;
-    align-items: center;
-    justify-content: center;
+    transition: background-color 0.15s ease;
 }
 
-/* Link indicator */
-.igp-link-indicator {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    width: 24px;
-    height: 24px;
-    background: rgba(0, 123, 255, 0.8);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
+.igp-cell-action:hover {
+    background: rgba(0, 0, 0, 0.8);
 }
 
-.igp-link-indicator .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+.igp-cell-action.igp-remove-image:hover {
+    background: #ed4956;
 }
 
-/* Row controls */
-.igp-grid-row {
-    position: relative;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    width: 100%;
+.igp-cell-action svg {
+    width: 15px;
+    height: 15px;
 }
 
-.igp-row-controls {
-    position: absolute;
-    right: -130px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 10;
+/* ---------- Sortable states ---------- */
+.igp-grid-cell.sortable-ghost {
+    opacity: 0.35;
 }
 
-.igp-add-row-above,
-.igp-add-row-below {
-    min-width: 120px;
-    height: 30px;
-    padding: 0 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    background-color: #2271b1;
-    color: white;
-    border: 1px solid #135e96;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+.igp-grid-cell.sortable-chosen {
+    transform: scale(1.03);
+    z-index: 1000;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-.igp-add-row-above:hover,
-.igp-add-row-below:hover {
-    background-color: #135e96;
-    border-color: #135e96;
+.igp-grid-cell.sortable-drag {
+    cursor: grabbing !important;
 }
 
-.igp-cells-in-row {
-    display: grid;
-    width: 100%;
-    gap: 5px;
-    grid-template-columns: repeat(var(--columns, 3), 1fr);
-}
-
-.igp-grid-cell:hover .igp-remove-image {
-    display: flex;
-}
-
-.igp-grid-cell .igp-remove-image:hover {
-    background: rgba(220, 53, 69, 0.9);
-}
-
-/* Grid Controls */
+/* ---------- Grid controls ---------- */
 #igp-grid-controls {
     margin: 20px 0;
 }
@@ -201,24 +302,12 @@
     margin-right: 10px;
 }
 
-/* Grid Container */
-#igp-grid-container {
-    background: #f9f9f9;
-    padding: 20px;
-    padding-right: 140px; /* Make room for row control buttons */
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    position: relative;
-}
-
+/* ---------- Loading ---------- */
 .igp-loading-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(255, 255, 255, 0.7);
-    z-index: 10;
+    z-index: 20;
     display: none;
     align-items: center;
     justify-content: center;
@@ -229,7 +318,7 @@
     width: 20px;
     height: 20px;
     border: 2px solid #f3f3f3;
-    border-top: 2px solid #0073aa;
+    border-top: 2px solid var(--igp-accent, #0095f6);
     border-radius: 50%;
     animation: igp-spin 1s linear infinite;
 }
@@ -238,37 +327,52 @@
     display: flex;
 }
 
-/* Form Styles */
+.igp-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+@keyframes igp-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ---------- Form / misc ---------- */
 #igp-grid-form .form-table th {
     width: 150px;
 }
 
-/* Shortcode Display */
 .igp-shortcode-display {
-    background: #f1f1f1;
+    background: #fafafa;
+    border: 1px solid var(--igp-border, #dbdbdb);
     padding: 15px;
-    border-radius: 4px;
     margin: 20px 0;
 }
 
 .igp-shortcode-display code {
     background: #fff;
+    border: 1px solid var(--igp-border, #dbdbdb);
     padding: 8px 12px;
-    border-radius: 4px;
     font-size: 14px;
     margin-right: 10px;
 }
 
-/* Copy Button */
 .igp-copy-shortcode {
     vertical-align: middle;
 }
 
-/* Success/Error Messages */
+.igp-grid-info {
+    margin: 10px 0;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid var(--igp-border, #dbdbdb);
+    font-size: 14px;
+}
+
+/* ---------- Messages ---------- */
 .igp-message {
     padding: 10px 15px;
     margin: 15px 0;
-    border-radius: 4px;
     border-left: 4px solid;
 }
 
@@ -284,69 +388,162 @@
     color: #721c24;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .igp-grid-editor {
-        max-width: 100%;
-    }
-    
-    .igp-grid-cell {
-        min-height: 80px;
-    }
-    
-    #igp-grid-container {
-        padding: 10px;
-    }
+/* ---------- Post settings modal ---------- */
+.igp-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 20px;
 }
 
-/* Loading State */
-.igp-loading {
-    opacity: 0.6;
-    pointer-events: none;
+.igp-modal {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px;
+    color: var(--igp-text, #262626);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
 }
 
-.igp-loading::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #0073aa;
-    border-radius: 50%;
-    animation: igp-spin 1s linear infinite;
+.igp-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--igp-border, #dbdbdb);
 }
 
-@keyframes igp-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.igp-modal-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--igp-text, #262626);
 }
 
-/* Grid Dimensions Display */
-.igp-grid-info {
-    margin: 10px 0;
-    padding: 10px;
-    background: #e7f3ff;
-    border-radius: 4px;
+.igp-modal-close {
+    border: none;
+    background: none;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--igp-muted, #8e8e8e);
+    cursor: pointer;
+    padding: 0;
+}
+
+.igp-modal-close:hover {
+    color: var(--igp-text, #262626);
+}
+
+.igp-modal-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.igp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--igp-text, #262626);
+}
+
+.igp-field input,
+.igp-field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--igp-border, #dbdbdb);
+    border-radius: 6px;
     font-size: 14px;
+    font-weight: 400;
+    color: var(--igp-text, #262626);
+    background: #fff;
 }
 
-/* Media Library Modal Adjustments */
+.igp-field input:focus,
+.igp-field select:focus {
+    border-color: var(--igp-accent, #0095f6);
+    box-shadow: 0 0 0 1px var(--igp-accent, #0095f6);
+    outline: none;
+}
+
+.igp-field-row {
+    display: flex;
+    gap: 12px;
+}
+
+.igp-field-row .igp-field {
+    flex: 1;
+}
+
+.igp-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-top: 1px solid var(--igp-border, #dbdbdb);
+}
+
+.igp-modal-footer-right {
+    display: flex;
+    gap: 8px;
+}
+
+.igp-modal-remove {
+    color: #ed4956 !important;
+    border-color: #ed4956 !important;
+}
+
+/* ---------- Media library tweaks ---------- */
 .media-modal .media-frame-content {
     bottom: 0;
 }
 
-/* Table Styles for Grid List */
-.wp-list-table .column-dimensions {
+/* ---------- Mini grid preview (grid list) ---------- */
+.igp-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 26px);
+    gap: 2px;
+    width: max-content;
+}
+
+.igp-mini-grid span {
+    display: block;
+    width: 26px;
+    height: 26px;
+    background: var(--igp-placeholder, #efefef);
+    overflow: hidden;
+}
+
+.igp-mini-grid img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.wp-list-table .column-preview {
     width: 100px;
 }
 
-.wp-list-table .column-shortcode {
-    width: 200px;
-}
+/* ---------- Responsive ---------- */
+@media (max-width: 782px) {
+    #igp-grid-container {
+        padding-right: 0;
+    }
 
-.wp-list-table .column-date {
-    width: 120px;
+    .igp-row-controls {
+        position: static;
+        transform: none;
+        flex-direction: row;
+        opacity: 1;
+        margin-bottom: 8px;
+    }
 }

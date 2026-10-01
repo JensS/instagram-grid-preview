@@ -29,6 +29,9 @@ if (!defined('WPINC')) {
                     <th scope="col" class="manage-column column-name column-primary">
                         <?php _e('Name', 'instagram-grid-preview'); ?>
                     </th>
+                    <th scope="col" class="manage-column column-preview">
+                        <?php _e('Preview', 'instagram-grid-preview'); ?>
+                    </th>
                     <th scope="col" class="manage-column column-description">
                         <?php _e('Description', 'instagram-grid-preview'); ?>
                     </th>
@@ -72,6 +75,35 @@ if (!defined('WPINC')) {
                             <button type="button" class="toggle-row">
                                 <span class="screen-reader-text"><?php _e('Show more details', 'instagram-grid-preview'); ?></span>
                             </button>
+                        </td>
+                        <td class="column-preview" data-colname="<?php _e('Preview', 'instagram-grid-preview'); ?>">
+                            <?php
+                            $mini_data = json_decode($grid->grid_data, true);
+                            if (!is_array($mini_data)) {
+                                $mini_data = array();
+                            }
+                            ksort($mini_data);
+                            $mini_cells = 0;
+                            ?>
+                            <div class="igp-mini-grid">
+                                <?php foreach ($mini_data as $cell) : ?>
+                                    <?php
+                                    if ($mini_cells >= 9) {
+                                        break;
+                                    }
+                                    if (empty($cell['image_url'])) {
+                                        continue;
+                                    }
+                                    $thumb = !empty($cell['thumbnail_url']) ? $cell['thumbnail_url'] : $cell['image_url'];
+                                    ?>
+                                    <span><img src="<?php echo esc_url($thumb); ?>" alt="" /></span>
+                                    <?php $mini_cells++; ?>
+                                <?php endforeach; ?>
+                                <?php while ($mini_cells < 9) : ?>
+                                    <span></span>
+                                    <?php $mini_cells++; ?>
+                                <?php endwhile; ?>
+                            </div>
                         </td>
                         <td class="column-description" data-colname="<?php _e('Description', 'instagram-grid-preview'); ?>">
                             <?php echo esc_html($grid->description); ?>

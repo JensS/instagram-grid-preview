@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,22 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.1.0 - 2026-10-01 =
+
+**New Features**
+* Redesigned grid to faithfully match Instagram's profile look: square (or 3:4) tiles, thin gaps and no rounded corners
+* Per-image media type badges (Carousel, Reel, Video), shown in the tile corner
+* Hover overlay with like and comment counts, formatted like Instagram (e.g. 12.5K)
+* New "Post settings" modal in the editor to set the link URL, media type, likes and comments per image
+* Grid list now shows a 3x3 mini-grid preview thumbnail for each grid
+
+**Admin UI**
+* Instagram-style grid editor: placeholder tiles, hover overlay, corner badges and fade-in row controls
+* Empty tiles display an "Add image" affordance
+
+**Fixed**
+* Drag-and-drop now rebuilds the grid so every row always keeps the correct number of cells
+
 = 1.0.3 - 2026-10-01 =
 
 **Security & Compliance**
@@ -159,6 +175,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Major UI update with an Instagram-faithful grid, per-image media badges and like/comment hover overlays. Recommended for all users.
 
 = 1.0.3 =
 Security and internationalization compliance update. Recommended for all users.

@@ -81,7 +81,7 @@ $grid_id = $is_edit ? $grid['id'] : 0;
         </table>
         
         <h2><?php esc_html_e('Grid Layout', 'instagram-grid-preview'); ?></h2>
-        <p><?php esc_html_e('Click on cells to add images. Drag and drop to reorder.', 'instagram-grid-preview'); ?></p>
+        <p><?php esc_html_e('Click a tile to add an image. Drag and drop to reorder. Click the pencil (or right-click a tile) to set the link, media type, likes and comments shown on hover.', 'instagram-grid-preview'); ?></p>
         
         <div id="igp-grid-container">
             <div id="igp-grid-editor" class="igp-grid-editor" data-columns="<?php echo esc_attr($grid_columns); ?>" data-rows="<?php echo esc_attr($grid_rows); ?>">

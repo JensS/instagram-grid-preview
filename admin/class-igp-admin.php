@@ -238,6 +238,21 @@ class IGP_Admin {
                     $validated_cell['link_url'] = esc_url_raw($cell['link_url']);
                 }
 
+                if (isset($cell['media_type'])) {
+                    $media_type = sanitize_key($cell['media_type']);
+                    if (in_array($media_type, array('carousel', 'reel', 'video'), true)) {
+                        $validated_cell['media_type'] = $media_type;
+                    }
+                }
+
+                if (isset($cell['likes'])) {
+                    $validated_cell['likes'] = max(0, intval($cell['likes']));
+                }
+
+                if (isset($cell['comments'])) {
+                    $validated_cell['comments'] = max(0, intval($cell['comments']));
+                }
+
                 // Only add the cell if it has at least an image_url
                 if (!empty($validated_cell) && isset($validated_cell['image_url'])) {
                     $grid_data[intval($index)] = $validated_cell;
