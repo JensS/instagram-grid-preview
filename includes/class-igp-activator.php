@@ -50,6 +50,7 @@ class IGP_Activator {
             `rows` tinyint(3) NOT NULL DEFAULT 3,
             aspect_ratio varchar(10) NOT NULL DEFAULT '1:1',
             grid_data longtext,
+            profile_data longtext,
             created_at timestamp DEFAULT CURRENT_TIMESTAMP,
             updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
@@ -80,6 +81,17 @@ class IGP_Activator {
         // Add aspect_ratio column if it doesn't exist
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table_grids ADD COLUMN aspect_ratio varchar(10) NOT NULL DEFAULT '1:1' AFTER `rows`");
+        }
+
+        // Check if profile_data column exists
+        $profile_column_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM $table_grids LIKE %s",
+            'profile_data'
+        ));
+
+        // Add profile_data column if it doesn't exist
+        if (empty($profile_column_exists)) {
+            $wpdb->query("ALTER TABLE $table_grids ADD COLUMN profile_data longtext AFTER grid_data");
         }
     }
 

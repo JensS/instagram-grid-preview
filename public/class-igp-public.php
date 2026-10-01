@@ -8,8 +8,8 @@
 /**
  * The public-facing functionality of the plugin.
  *
- * Defines the plugin name, version, and hooks for how to
- * enqueue the public-facing stylesheet and JavaScript.
+ * Registers the public profile route (/{instagram-grid}/{id}) and renders
+ * the Instagram-style profile and grid.
  */
 class IGP_Public {
 
@@ -35,8 +35,8 @@ class IGP_Public {
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
-     * @param    string    $plugin_name       The name of the plugin.
-     * @param    string    $version    The version of this plugin.
+     * @param    string    $plugin_name    The name of this plugin.
+     * @param    string    $version        The version of this plugin.
      */
     public function __construct($plugin_name, $version) {
         $this->plugin_name = $plugin_name;
@@ -44,108 +44,134 @@ class IGP_Public {
     }
 
     /**
-     * Register the stylesheets for the public-facing side of the site.
+     * Register the public rewrite rule for profile pages.
      *
-     * @since    1.0.0
+     * @since    1.2.0
      */
-    public function enqueue_styles() {
-        wp_enqueue_style(
-            $this->plugin_name,
-            IGP_PLUGIN_URL . 'public/css/igp-public.css',
-            array(),
-            $this->version,
-            'all'
+    public function add_rewrite_rules() {
+        add_rewrite_rule(
+            '^instagram-grid/([0-9]+)/?$',
+            'index.php?igp_profile=$matches[1]',
+            'top'
         );
+
+        // Flush rules once whenever the plugin version changes (e.g. after
+        // an update that introduces new routes).
+        if (get_option('igp_rewrite_version') !== IGP_VERSION) {
+            flush_rewrite_rules(false);
+            update_option('igp_rewrite_version', IGP_VERSION);
+        }
     }
 
     /**
-     * Register the JavaScript for the public-facing side of the site.
+     * Register the custom query var.
      *
-     * @since    1.0.0
+     * @since    1.2.0
+     * @param    array    $vars    Existing query vars
+     * @return   array    Modified query vars
      */
-    public function enqueue_scripts() {
-        wp_enqueue_script(
-            $this->plugin_name,
-            IGP_PLUGIN_URL . 'public/js/igp-public.js',
-            array('jquery'),
-            $this->version,
-            true
-        );
+    public function add_query_vars($vars) {
+        $vars[] = 'igp_profile';
+        return $vars;
     }
 
     /**
-     * Register shortcodes
+     * Load the standalone profile template when the route is requested.
      *
-     * @since    1.0.0
+     * @since    1.2.0
+     * @param    string    $template    The template WordPress intends to load
+     * @return   string    Modified template path
      */
-    public function register_shortcodes() {
-        add_shortcode('instagram_grid', array($this, 'instagram_grid_shortcode'));
-    }
+    public function load_profile_template($template) {
+        $grid_id = absint(get_query_var('igp_profile'));
 
-    /**
-     * Instagram grid shortcode handler
-     *
-     * @since    1.0.0
-     * @param    array    $atts    Shortcode attributes
-     * @return   string   HTML output
-     */
-    public function instagram_grid_shortcode($atts) {
-        $atts = shortcode_atts(array(
-            'id' => 0,
-            'class' => ''
-        ), $atts, 'instagram_grid');
-
-        $grid_id = intval($atts['id']);
-        $custom_class = sanitize_html_class($atts['class']);
-
-        if ($grid_id <= 0) {
-            return '<p>' . __('Invalid grid ID.', 'instagram-grid-preview') . '</p>';
+        if (!$grid_id) {
+            return $template;
         }
 
         $grid = IGP_Grid_Model::get_grid_data($grid_id);
 
         if (!$grid) {
-            return '<p>' . __('Grid not found.', 'instagram-grid-preview') . '</p>';
+            return $template;
         }
 
-        return $this->render_grid($grid, $custom_class);
+        global $wp_query;
+        $wp_query->is_404 = false;
+        status_header(200);
+        nocache_headers();
+
+        // Keep these demo profiles out of search engines.
+        header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex', true);
+
+        set_query_var('igp_profile_grid', $grid);
+
+        return IGP_PLUGIN_DIR . 'public/partials/igp-profile.php';
     }
 
     /**
-     * Render the grid HTML
+     * Disallow the profile route in robots.txt.
      *
-     * @since    1.0.0
-     * @param    array     $grid          Grid data
-     * @param    string    $custom_class  Custom CSS class
-     * @return   string    HTML output
+     * @since    1.2.0
+     * @param    string    $output    The robots.txt contents
+     * @param    bool      $public    Whether the site is public
+     * @return   string    Modified robots.txt contents
      */
-    private function render_grid($grid, $custom_class = '') {
-        $grid_data = $grid['grid_data'];
-        $columns = $grid['columns'];
-        $rows = $grid['rows'];
+    public function add_robots_txt($output, $public) {
+        if ($public && false === strpos($output, 'Disallow: /instagram-grid/')) {
+            $output .= "\nDisallow: /instagram-grid/\n";
+        }
+        return $output;
+    }
+
+    /**
+     * Build the profile data used by the template and the front-end viewer.
+     *
+     * @since    1.2.0
+     * @param    array    $grid    Grid data
+     * @return   array    Profile data
+     */
+    public static function get_profile($grid) {
+        $profile = isset($grid['profile_data']) && is_array($grid['profile_data']) ? $grid['profile_data'] : array();
+        $posts = IGP_Grid_Model::normalize_grid_data($grid['grid_data']);
+
+        return array(
+            'id' => intval($grid['id']),
+            'username' => !empty($profile['username']) ? $profile['username'] : sanitize_title($grid['name']),
+            'display_name' => !empty($profile['display_name']) ? $profile['display_name'] : $grid['name'],
+            'bio' => !empty($profile['bio']) ? $profile['bio'] : $grid['description'],
+            'website' => !empty($profile['website']) ? $profile['website'] : '',
+            'avatar_url' => !empty($profile['avatar_url']) ? $profile['avatar_url'] : '',
+            'followers' => isset($profile['followers']) ? max(0, intval($profile['followers'])) : 0,
+            'following' => isset($profile['following']) ? max(0, intval($profile['following'])) : 0,
+            'posts_count' => count($posts),
+        );
+    }
+
+    /**
+     * Render the profile grid (clickable tiles).
+     *
+     * @since    1.2.0
+     * @param    array    $grid    Grid data
+     * @return   string   HTML output
+     */
+    public static function render_grid($grid) {
+        $posts = IGP_Grid_Model::normalize_grid_data($grid['grid_data']);
+        $columns = max(1, intval($grid['columns']));
+        $rows = max(1, intval($grid['rows']));
         $aspect_ratio = isset($grid['aspect_ratio']) ? $grid['aspect_ratio'] : '1:1';
 
-        $classes = array('igp-grid');
-        if (!empty($custom_class)) {
-            $classes[] = $custom_class;
-        }
-
-        $html = '<div class="' . implode(' ', $classes) . '" data-columns="' . $columns . '" data-rows="' . $rows . '" data-aspect-ratio="' . esc_attr($aspect_ratio) . '">';
+        $html = '<div class="igp-grid" data-columns="' . esc_attr($columns) . '" data-rows="' . esc_attr($rows) . '" data-aspect-ratio="' . esc_attr($aspect_ratio) . '">';
 
         for ($row = 0; $row < $rows; $row++) {
             for ($col = 0; $col < $columns; $col++) {
-                $cell_index = $row * $columns + $col;
-                $cell_data = isset($grid_data[$cell_index]) ? $grid_data[$cell_index] : null;
+                $index = $row * $columns + $col;
+                $post = isset($posts[$index]) ? $posts[$index] : null;
 
-                $html .= '<div class="igp-grid-cell" data-row="' . $row . '" data-col="' . $col . '">';
-
-                if ($cell_data && isset($cell_data['image_url'])) {
-                    $html .= $this->render_cell($cell_data);
+                if ($post) {
+                    $html .= self::render_cell($post, $index);
                 } else {
-                    $html .= '<div class="igp-grid-placeholder"></div>';
+                    $html .= '<div class="igp-grid-cell igp-grid-cell--empty"></div>';
                 }
-
-                $html .= '</div>';
             }
         }
 
@@ -155,48 +181,46 @@ class IGP_Public {
     }
 
     /**
-     * Render a single populated grid cell.
+     * Render a single clickable grid tile.
      *
-     * @since    1.1.0
-     * @param    array    $cell_data    Sanitized cell data
+     * @since    1.2.0
+     * @param    array    $post     Normalized post
+     * @param    int      $index    Cell index
      * @return   string   HTML output
      */
-    private function render_cell($cell_data) {
-        $image_url = esc_url($cell_data['image_url']);
-        $image_alt = isset($cell_data['image_alt']) ? $cell_data['image_alt'] : '';
-        $link_url = isset($cell_data['link_url']) ? $cell_data['link_url'] : '';
+    private static function render_cell($post, $index) {
+        $first = $post['media'][0];
+        $thumb = $first['thumbnail_url'];
+        $alt = $first['alt'];
 
-        $is_link = !empty($link_url);
-        $tag = $is_link ? 'a' : 'span';
-        $attrs = $is_link
-            ? ' href="' . esc_url($link_url) . '" target="_blank" rel="noopener noreferrer"'
-            : '';
+        $html = '<div class="igp-grid-cell" role="button" tabindex="0" data-post-index="' . esc_attr($index) . '" aria-label="' . esc_attr($alt !== '' ? $alt : __('Open post', 'instagram-grid-preview')) . '">';
 
-        $html = '<' . $tag . ' class="igp-grid-item"' . $attrs . '>';
-        $html .= '<img src="' . $image_url . '" alt="' . esc_attr($image_alt) . '" class="igp-grid-image" />';
+        if ($thumb) {
+            $html .= '<img src="' . esc_url($thumb) . '" alt="' . esc_attr($alt) . '" class="igp-grid-image" loading="lazy" />';
+        } else {
+            // Video without a poster image.
+            $html .= '<span class="igp-grid-media-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>';
+        }
 
-        $badge = $this->get_media_badge($cell_data);
+        $badge = self::get_media_badge($post['media_type']);
         if ($badge) {
             $html .= $badge;
         }
 
-        $html .= $this->get_stats_overlay($cell_data);
-
-        $html .= '</' . $tag . '>';
+        $html .= self::get_stats_overlay($post);
+        $html .= '</div>';
 
         return $html;
     }
 
     /**
-     * Build the top-right media type badge for a cell.
+     * Build the top-right media type badge for a tile.
      *
-     * @since    1.1.0
-     * @param    array    $cell_data    Sanitized cell data
-     * @return   string   Badge HTML or empty string
+     * @since    1.2.0
+     * @param    string    $type    Media type
+     * @return   string    Badge HTML or empty string
      */
-    private function get_media_badge($cell_data) {
-        $type = isset($cell_data['media_type']) ? $cell_data['media_type'] : '';
-
+    public static function get_media_badge($type) {
         $icons = array(
             'carousel' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="14" height="14" rx="2"/><path d="M17 21H5a2 2 0 0 1-2-2V7"/></svg>',
             'reel' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none"/></svg>',
@@ -213,24 +237,24 @@ class IGP_Public {
     /**
      * Build the hover overlay with like/comment counts.
      *
-     * @since    1.1.0
-     * @param    array    $cell_data    Sanitized cell data
+     * @since    1.2.0
+     * @param    array    $post    Normalized post
      * @return   string   Overlay HTML or empty string
      */
-    private function get_stats_overlay($cell_data) {
-        $likes = isset($cell_data['likes']) ? intval($cell_data['likes']) : 0;
-        $comments = isset($cell_data['comments']) ? intval($cell_data['comments']) : 0;
+    public static function get_stats_overlay($post) {
+        $likes = isset($post['likes']) ? intval($post['likes']) : 0;
+        $comments = isset($post['comments']) ? intval($post['comments']) : 0;
 
         if ($likes <= 0 && $comments <= 0) {
             return '';
         }
 
-        $heart = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l8.84 8.84 8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>';
-        $comment = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+        $heart = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+        $comment = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22z"/></svg>';
 
         $html = '<span class="igp-grid-overlay" aria-hidden="true">';
-        $html .= '<span class="igp-grid-stat">' . $heart . '<span>' . esc_html($this->format_count($likes)) . '</span></span>';
-        $html .= '<span class="igp-grid-stat">' . $comment . '<span>' . esc_html($this->format_count($comments)) . '</span></span>';
+        $html .= '<span class="igp-grid-stat">' . $heart . '<span>' . esc_html(self::format_count($likes)) . '</span></span>';
+        $html .= '<span class="igp-grid-stat">' . $comment . '<span>' . esc_html(self::format_count($comments)) . '</span></span>';
         $html .= '</span>';
 
         return $html;
@@ -239,11 +263,11 @@ class IGP_Public {
     /**
      * Format a count the way Instagram does (commas under 10k, K/M above).
      *
-     * @since    1.1.0
+     * @since    1.2.0
      * @param    int       $count    The count to format
      * @return   string    Formatted count
      */
-    private function format_count($count) {
+    public static function format_count($count) {
         $count = intval($count);
 
         if ($count < 10000) {

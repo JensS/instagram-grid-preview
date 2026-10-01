@@ -29,7 +29,7 @@ Temporary Items
 .vscode/
 .idea/
 
-# Claude Code
+# AI assistant settings
 .claude/settings.local.json
 
 # Node.js

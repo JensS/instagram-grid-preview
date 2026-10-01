@@ -1,13 +1,13 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
-This is a WordPress/ClassicPress plugin that creates Instagram-style grid layouts using WordPress media library images. Grids are displayed via shortcodes with mobile-responsive design.
+This is a WordPress/ClassicPress plugin that turns the media library into public, Instagram-style profile pages. Each grid (profile) is served at its own URL (`/instagram-grid/{id}`) with a standalone, mobile-responsive layout and a post viewer with carousel/video slideshows.
 
 **Plugin Details:**
-- **Version:** 1.0.1
+- **Version:** 1.2.0
 - **Requires:** PHP 7.4+, WordPress 5.0+ or ClassicPress 1.0+
 - **Text Domain:** instagram-grid-preview
 - **Architecture:** WordPress Plugin Boilerplate pattern
@@ -61,16 +61,20 @@ The plugin follows WordPress Plugin Boilerplate architecture with clean separati
 
 **Public Class** (`IGP_Public`):
 - Located in: `public/class-igp-public.php`
-- Registers `[instagram_grid]` shortcode
-- Renders grid HTML with responsive CSS grid layout
-- Supports optional image linking (set via right-click in editor)
-- Opens links in new tab with `rel="noopener noreferrer"` for security
+- Registers the `^instagram-grid/([0-9]+)/?$` rewrite rule and the `igp_profile` query var
+- Hooks `template_include` to serve the standalone profile template for profile URLs
+- Adds SEO no-index headers and a `robots.txt` Disallow rule
+- Renders the clickable grid (tiles carry `data-post-index`) via the static `render_grid()`
+- Normalizes legacy single-image cells into posts with a `media[]` array
 
-**Shortcode Usage:**
+**Profile Route:**
 ```
-[instagram_grid id="123"]
-[instagram_grid id="123" class="custom-class"]
+/instagram-grid/{id}
 ```
+
+**Profile Template:** `public/partials/igp-profile.php` — a full standalone HTML document (no theme chrome) that renders the profile header, tab bar, grid and the JSON payload consumed by the post viewer.
+
+**Post Viewer:** `public/js/igp-profile.js` + `public/css/igp-profile.css` — opens a modal with a slideshow (images + video, arrows/dots/keyboard), caption and like/comment counts. No shortcode is provided (removed in 1.2.0).
 
 ### Database Schema
 
@@ -84,37 +88,40 @@ CREATE TABLE wp_igp_grids (
     columns tinyint(3) NOT NULL DEFAULT 3,
     `rows` tinyint(3) NOT NULL DEFAULT 3,
     aspect_ratio varchar(10) NOT NULL DEFAULT '1:1',
-    grid_data longtext,  -- JSON string of cell data
+    grid_data longtext,     -- JSON map of cell index => post
+    profile_data longtext,  -- JSON profile fields (username, bio, avatar, counts, …)
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 )
 ```
 
-**Grid Data Structure (Sparse Object/Array):**
+**Grid Data Structure (Sparse Object/Array of Posts):**
 
 The grid data is stored as a JSON object where:
 - Keys are cell indices calculated as: `row * columns + col`
 - Only populated cells are stored (sparse structure saves space)
-- Each cell contains image metadata and optional link URL
+- Each cell is a **post** containing an array of media slides (images and/or video), a caption and engagement counts
 
 ```json
 {
   "0": {
-    "image_id": 123,
-    "image_url": "https://example.com/image.jpg",
-    "thumbnail_url": "https://example.com/thumb.jpg",
-    "image_alt": "Alt text",
-    "link_url": "https://example.com"
-  },
-  "5": {
-    "image_id": 456,
-    "image_url": "https://example.com/another.jpg",
-    "thumbnail_url": "https://example.com/another-thumb.jpg",
-    "image_alt": "Another image"
+    "media": [
+      { "type": "image", "id": 123, "url": "https://example.com/a.jpg", "thumbnail_url": "https://example.com/a-thumb.jpg", "alt": "Alt text" },
+      { "type": "video", "id": 456, "url": "https://example.com/b.mp4", "thumbnail_url": "https://example.com/b-poster.jpg", "alt": "" }
+    ],
+    "media_type": "carousel",
+    "caption": "Hello world",
+    "likes": 120,
+    "comments": 8,
+    "link_url": ""
   }
 }
 ```
+
+- `media_type` is one of `photo`, `carousel`, `reel`, `video` and drives the corner badge
+- Videos have **no native poster** in WordPress/ClassicPress — `thumbnail_url` is set explicitly via the editor's poster picker and is never the `.mp4` URL
+- Legacy single-image cells (`image_id`/`image_url`/`thumbnail_url`/`image_alt`) are migrated to a one-slide `media[]` array on read by `IGP_Grid_Model::normalize_grid_data()`
 
 **Why Sparse Structure:**
 - Grids can be large (e.g., 10x10 = 100 cells) but users may only populate a few cells
@@ -126,7 +133,7 @@ The grid data is stored as a JSON object where:
 **Activator** (`IGP_Activator`):
 - Located in: `includes/class-igp-activator.php`
 - Creates database table on activation using `dbDelta()`
-- Handles schema migrations (e.g., `aspect_ratio` column added in v1.1.0)
+- Handles schema migrations (e.g., `aspect_ratio` added in v1.1.0, `profile_data` added in v1.2.0)
 - Sets custom capabilities for Administrator and Editor roles
 - Flushes rewrite rules
 
@@ -146,18 +153,21 @@ Granted to Administrator and Editor roles by default in `IGP_Activator::set_defa
 
 ## Key Features
 
-1. **Grid Editor:**
-   - Drag-and-drop cell reordering (uses Sortable.js v1.15.0)
-   - WordPress media library integration (`wp.media()`)
+1. **Profile Editor:**
+   - Drag-and-drop post reordering (uses Sortable.js v1.15.0)
+   - WordPress media library integration (`wp.media()`, multiple + `image`/`video`)
    - Configurable dimensions (columns/rows)
    - Aspect ratio support (1:1, 3:4)
-   - Right-click to add URL links to images
+   - Post settings modal: caption, media type, likes, comments, link, slides manager
+   - Separate poster picker for video slides
+   - Editable profile fields (avatar, username, display name, bio, website, followers, following)
    - Dynamic row management (insert rows above/below, shifts existing content)
 
-2. **Responsive Display:**
-   - CSS Grid-based layout (not flexbox)
-   - Mobile-responsive via media queries
-   - Optional custom CSS classes
+2. **Public Profile + Post Viewer:**
+   - Standalone Instagram-style profile at `/instagram-grid/{id}` (no theme chrome)
+   - Clickable grid; tiles carry `data-post-index`
+   - Post viewer with carousel/video slideshow (arrows, dots, keyboard)
+   - SEO no-index (`X-Robots-Tag`, `robots` meta, `robots.txt`)
 
 3. **AJAX Operations:**
    - All grid operations use AJAX (save, delete, duplicate, get)
@@ -182,7 +192,7 @@ This calculation is used throughout the JavaScript and PHP code. When adding/rem
 
 ### Row Management Logic
 
-When inserting a row (see `addRow()` in `igp-admin.js:369`):
+When inserting a row (see `addRow()` in `igp-admin.js`):
 1. Increment row count
 2. Create new grid data object
 3. For each existing cell:
@@ -196,23 +206,25 @@ When inserting a row (see `addRow()` in `igp-admin.js:369`):
 
 Sortable.js is initialized per-row (not for entire grid):
 - Allows dragging between rows via `group: 'grid-cells'`
-- Only cells with images can be dragged (see `filter` function)
-- On drop, recalculates absolute indices and rebuilds entire `gridData` object
-- Uses temporary array to handle position swaps correctly
+- Only cells with media can be dragged (see `filter` function)
+- On drop, recalculates absolute indices, swaps the two positions in `gridData`, then calls `generateGrid()` (deferred with `setTimeout`) so every row is rebuilt with exactly `columns` cells
 
 ### AJAX Data Sanitization
 
 Server-side validation in `IGP_Admin::ajax_save_grid()`:
-- `image_id`: Cast to `intval()`
-- `image_url`, `thumbnail_url`: Sanitized with `esc_url_raw()`
-- `image_alt`: Sanitized with `sanitize_text_field()`
-- `link_url`: Sanitized with `esc_url_raw()`, removed if empty
-- Cells without `image_url` are excluded
+- Each post's `media[]` is sanitized slide-by-slide via `sanitize_media_slide()`: `type` in `image|video`, `id` → `intval()`, `url`/`thumbnail_url` → `esc_url_raw()`, `alt` → `sanitize_text_field()`
+- Legacy single-image cells are promoted to a one-slide `media[]` array; the first slide is mirrored back into the legacy `image_*` fields
+- `media_type`: whitelisted to `photo|carousel|reel|video`
+- `caption`: `sanitize_textarea_field()`
+- `link_url`: `esc_url_raw()`, removed if empty
+- `likes`/`comments`: `max(0, intval())`
+- `profile_data` is sanitized by `sanitize_profile_data()`
+- Posts with no media are excluded
 
 ### Constants
 
 Defined in `instagram-grid-preview.php`:
-- `IGP_VERSION` - Plugin version (1.0.1)
+- `IGP_VERSION` - Plugin version (1.2.0)
 - `IGP_PLUGIN_DIR` - Plugin directory path
 - `IGP_PLUGIN_URL` - Plugin URL
 - `IGP_PLUGIN_BASENAME` - Plugin basename for hooks
@@ -253,16 +265,20 @@ instagram-grid-preview/
 │   └── class-igp-i18n.php (internationalization)
 ├── admin/
 │   ├── class-igp-admin.php (admin functionality)
-│   ├── js/igp-admin.js (grid editor JavaScript)
+│   ├── js/igp-admin.js (profile editor JavaScript)
 │   ├── css/igp-admin.css (admin styles)
 │   └── partials/
-│       ├── igp-admin-grids-list.php (grids list template)
-│       └── igp-admin-grid-editor.php (grid editor template)
+│       ├── igp-admin-grids-list.php (profiles list template)
+│       └── igp-admin-grid-editor.php (profile editor template)
 └── public/
-    ├── class-igp-public.php (public shortcode)
-    ├── js/igp-public.js (frontend JavaScript)
-    └── css/igp-public.css (frontend styles)
+    ├── class-igp-public.php (rewrite rules, profile rendering)
+    ├── partials/igp-profile.php (standalone profile template)
+    ├── js/igp-profile.js (post viewer)
+    ├── css/igp-public.css (grid styles)
+    └── css/igp-profile.css (profile + viewer styles)
 ```
+
+> Note: the old `public/js/igp-public.js` is no longer enqueued; the profile page loads `public/js/igp-profile.js` directly.
 
 ## Common Development Tasks
 
@@ -295,7 +311,7 @@ public function ajax_save_grid() {
     check_ajax_referer('igp_nonce', 'nonce');
 
     if (!current_user_can('create_instagram_grids')) {
-        wp_die(__('Permission denied.', 'instagram-grid-preview'));
+        wp_die(esc_html__('Permission denied.', 'instagram-grid-preview'));
     }
 
     // Process and sanitize data

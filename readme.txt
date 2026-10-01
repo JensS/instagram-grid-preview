@@ -4,26 +4,30 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Create beautiful Instagram-style grid layouts using your WordPress media library images with a visual drag-and-drop editor.
+Create a fake Instagram profile from your WordPress media library, complete with a carousel/video post viewer and a visual drag-and-drop editor.
 
 == Description ==
 
-Instagram Grid Preview allows you to create beautiful, responsive Instagram-style grid layouts directly from your WordPress media library. Perfect for photographers, artists, and anyone who wants to showcase images in an eye-catching grid format.
+Instagram Grid Preview turns your WordPress media library into a public, Instagram-style profile page. Each profile has its own URL, and clicking a tile opens a post viewer with a full slideshow (images and video), caption, and like/comment counts. Perfect for photographers, artists, and anyone who wants to showcase media in an eye-catching Instagram-like format.
 
 = Features =
 
-* **Visual Grid Editor** - Intuitive drag-and-drop interface for arranging images
-* **WordPress Media Library Integration** - Use existing images from your media library
+* **Public Profile Page** - Each grid gets its own standalone Instagram-style profile at `/instagram-grid/{id}`
+* **Post Viewer** - Click a tile to open a slideshow with arrows, dots and keyboard navigation
+* **Carousels** - Add multiple images to a single post
+* **Video Posts** - Add video slides that play in the viewer, with a separate poster image
+* **Profile Details** - Avatar, username, display name, bio, website, followers and following
+* **Visual Grid Editor** - Intuitive drag-and-drop interface for arranging posts
+* **Media Type Badges** - Carousel, Reel and Video badges shown in the tile corner
+* **Hover Overlay** - Like and comment counts, formatted like Instagram (e.g. 12.5K)
 * **Multiple Aspect Ratios** - Support for 1:1 (square) and 3:4 (portrait) ratios
-* **Fully Responsive** - Grids adapt beautifully to all screen sizes
-* **Image Linking** - Add clickable links to individual images
-* **Dynamic Row Management** - Add rows above or below existing content
-* **Unlimited Grids** - Create as many grids as you need
-* **Simple Shortcode** - Display anywhere with `[instagram_grid id="123"]`
+* **Fully Responsive** - Profiles adapt beautifully to all screen sizes
+* **Unlimited Profiles** - Create as many as you need
+* **Private by Default** - Profile pages are excluded from search engines
 * **ClassicPress Compatible** - Works with both WordPress and ClassicPress
 
 = Perfect For =
@@ -37,11 +41,11 @@ Instagram Grid Preview allows you to create beautiful, responsive Instagram-styl
 = How It Works =
 
 1. Navigate to **Instagram Grids** in your WordPress admin
-2. Create a new grid and set dimensions
-3. Click on cells to add images from your media library
-4. Drag and drop to reorder images
-5. Right-click images to add optional links
-6. Copy the shortcode and paste it anywhere on your site
+2. Create a new profile and set its dimensions and details
+3. Click on empty tiles to add images or video from your media library
+4. Drag and drop to reorder posts
+5. Open a post to add a caption, media type, likes, comments and links
+6. Share the public profile URL shown in the editor
 
 = Privacy & Security =
 
@@ -87,17 +91,25 @@ Yes, you can add the same image to multiple cells in your grid.
 
 The grid will display a placeholder for that cell. You'll need to update the grid with a new image.
 
+= Where can I find the public profile page? =
+
+Every profile has its own URL in the form `/instagram-grid/{id}`. The exact URL is shown in the editor and in the profiles list, with a copy button and a "View profile" link.
+
+= Can I embed a profile inside a page? =
+
+Not currently. Profiles are served as their own standalone Instagram-style pages. You can link to the profile URL from any menu, post or page.
+
+= How do I add a poster image to a video? =
+
+WordPress and ClassicPress do not generate poster images for videos. Open the post in the editor and click the camera button on the video slide to choose a poster image from your media library. This image is used in the grid tile and in the post viewer.
+
 = Can I customize the styling? =
 
-Yes, use the `class` parameter in the shortcode to add custom CSS classes: `[instagram_grid id="123" class="my-custom-grid"]`. You can also override the plugin's CSS in your theme.
-
-= Is this compatible with page builders? =
-
-Yes, the shortcode works with most page builders that support WordPress shortcodes, including Elementor, Beaver Builder, and Divi.
+Yes, you can override the plugin's CSS (`igp-public.css`, `igp-profile.css`) in your theme.
 
 = Will this slow down my site? =
 
-No, the plugin is lightweight and only loads assets on pages where grids are displayed. Images are served from your media library with standard WordPress optimization.
+No, the plugin is lightweight and only loads its assets on profile pages. Images are served from your media library with standard WordPress optimization.
 
 = Can I export/import grids? =
 
@@ -109,15 +121,33 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Screenshots ==
 
-1. Grid editor interface with drag-and-drop functionality
-2. WordPress media library integration
-3. Grid configuration options (dimensions, aspect ratio)
-4. Right-click context menu for adding links
-5. Responsive grid display on desktop
-6. Responsive grid display on mobile
-7. Grids list management page
+1. Instagram-style profile page
+2. Post viewer with carousel slideshow
+3. Profile editor with drag-and-drop grid
+4. Post settings modal (caption, media type, likes, comments)
+5. Video slide with a separate poster image picker
+6. Responsive profile display on mobile
+7. Profiles list management page
 
 == Changelog ==
+
+= 1.2.0 - 2026-10-01 =
+
+**New Features**
+* Public Instagram-style profile page at `/instagram-grid/{id}`, served as a standalone page with no theme chrome
+* Post viewer: click any tile to open a slideshow with arrows, dots and keyboard navigation, plus caption, likes and comments
+* Carousel support: add multiple images to a single post
+* Video support: add video slides that play in the post viewer
+* Separate poster image picker for videos (WordPress/ClassicPress have no native video poster)
+* Editable profile: avatar, username, display name, bio, website, followers and following
+* Media type badges and hover overlays on the public grid
+
+**Changed**
+* Replaced the `[instagram_grid]` shortcode with the public profile page
+* Profiles list now shows the profile URL with a copy button and a "View profile" action
+
+**SEO**
+* Profile pages are excluded from search engines via `X-Robots-Tag`, a `robots` meta tag and a `robots.txt` Disallow rule
 
 = 1.1.0 - 2026-10-01 =
 
@@ -175,6 +205,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Major update: grids are now public Instagram-style profile pages with a carousel/video post viewer. The [instagram_grid] shortcode has been replaced by the /instagram-grid/{id} page. Recommended for all users.
 
 = 1.1.0 =
 Major UI update with an Instagram-faithful grid, per-image media badges and like/comment hover overlays. Recommended for all users.

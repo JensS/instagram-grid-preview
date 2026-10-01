@@ -139,9 +139,10 @@ class Instagram_Grid_Preview {
     private function define_public_hooks() {
         $plugin_public = new IGP_Public($this->get_plugin_name(), $this->get_version());
 
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
-        $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
+        $this->loader->add_action('init', $plugin_public, 'add_rewrite_rules');
+        $this->loader->add_filter('query_vars', $plugin_public, 'add_query_vars');
+        $this->loader->add_filter('template_include', $plugin_public, 'load_profile_template');
+        $this->loader->add_filter('robots_txt', $plugin_public, 'add_robots_txt', 99, 2);
     }
 
     /**

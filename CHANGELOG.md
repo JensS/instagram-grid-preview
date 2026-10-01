@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-01
+
+### Added
+- Public Instagram-style profile page at `/instagram-grid/{id}`, served as a standalone page with no theme chrome
+- Post viewer: click any tile to open a slideshow with arrows, dots and keyboard navigation, plus caption, likes and comments
+- Carousel support: multiple images per post
+- Video support: video slides that play in the post viewer
+- Separate poster image picker for videos, since WordPress/ClassicPress have no native video poster
+- Editable profile fields: avatar, username, display name, bio, website, followers and following
+- `profile_data` column on the grids table (with activation migration)
+- Media type badges and hover overlays on the public grid
+
+### Changed
+- Replaced the `[instagram_grid]` shortcode with the public profile page
+- Grid data now stores an array of media slides per cell; legacy single-image data is migrated automatically on read
+- Profiles list now shows the profile URL with a copy button and a "View profile" action
+
+### SEO
+- Profile pages are excluded from search engines via an `X-Robots-Tag` header, a `robots` meta tag and a `robots.txt` Disallow rule
+
 ## [1.1.0] - 2026-10-01
 
 ### Added
@@ -81,7 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.1...v1.0.2

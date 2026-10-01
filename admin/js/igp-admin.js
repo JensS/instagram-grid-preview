@@ -1,8 +1,8 @@
 /**
  * Admin JavaScript for Instagram Grid Preview
  *
- * The editor mirrors Instagram's profile grid: square tiles, thin gaps,
- * corner media badges and a dark hover overlay with like/comment counts.
+ * Editor for Instagram-style profiles: multi-slide posts (images + video),
+ * captions, media-type badges and hover like/comment counts.
  */
 
 (function($) {
@@ -11,7 +11,10 @@
     let gridData = {};
     let sortableInstance = null;
     let mediaFrame = null;
+    let avatarFrame = null;
     let currentCellIndex = null;
+    let appendToCell = false;
+    let activeModalIndex = null;
     let isRegeneratingGrid = false; // Flag to prevent recursive grid regeneration
 
     // Grid configuration state - single source of truth
@@ -29,15 +32,13 @@
         reel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none"/></svg>',
         video: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
         plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-        pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
         trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>',
-        link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
+        link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+        camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
     };
 
     /**
      * Escape HTML (including quotes) to prevent XSS attacks
-     * @param {string} text - Text to escape
-     * @return {string} Escaped HTML
      */
     function escapeHtml(text) {
         if (text === null || text === undefined) return '';
@@ -49,57 +50,48 @@
             .replace(/'/g, '&#039;');
     }
 
-    /**
-     * Add thousands separators to a number.
-     * @param {number} n
-     * @return {string}
-     */
     function commaNumber(n) {
         return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-    /**
-     * Format a count the way Instagram does (commas under 10k, K/M above).
-     * @param {number} count
-     * @return {string}
-     */
     function formatCount(count) {
         const n = Math.max(0, parseInt(count, 10) || 0);
-        if (n < 10000) {
-            return commaNumber(n);
-        }
-        if (n < 1000000) {
-            return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-        }
+        if (n < 10000) return commaNumber(n);
+        if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
         return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     }
 
-    $(document).ready(function() {
-        // Initialize grid config from DOM inputs
-        syncConfigFromDOM();
+    /**
+     * Effective media type for a post (badge + auto detection).
+     */
+    function effectiveMediaType(post) {
+        if (!post) return 'photo';
+        if (['carousel', 'reel', 'video'].indexOf(post.media_type) !== -1) {
+            return post.media_type;
+        }
+        const media = post.media || [];
+        if (media.length > 1) return 'carousel';
+        if (media.length === 1 && media[0].type === 'video') return 'video';
+        return 'photo';
+    }
 
+    $(document).ready(function() {
+        syncConfigFromDOM();
         initializeGridEditor();
         bindEvents();
 
-        // Load existing grid data if editing
-        if (window.igpGridData && window.igpIsEdit) {
+        if (window.igpGridData) {
             gridData = window.igpGridData;
             updateGridDisplay();
         }
     });
 
-    /**
-     * Sync grid config from DOM inputs to state object
-     */
     function syncConfigFromDOM() {
         gridConfig.columns = parseInt($('#grid-columns').val()) || 3;
         gridConfig.rows = parseInt($('#grid-rows').val()) || 3;
         gridConfig.aspectRatio = $('#grid-aspect-ratio').val() || '1:1';
     }
 
-    /**
-     * Sync grid config from state object to DOM inputs (without triggering events)
-     */
     function syncConfigToDOM() {
         $('#grid-columns').val(gridConfig.columns);
         $('#grid-rows').val(gridConfig.rows);
@@ -112,26 +104,18 @@
     }
 
     function generateGrid() {
-        // Prevent recursive calls
-        if (isRegeneratingGrid) {
-            return;
-        }
+        if (isRegeneratingGrid) return;
         isRegeneratingGrid = true;
 
         const container = document.getElementById('igp-grid-editor');
         const columns = gridConfig.columns;
         const rows = gridConfig.rows;
-        const aspectRatio = gridConfig.aspectRatio;
 
-        // Update grid CSS
         container.setAttribute('data-columns', columns);
         container.setAttribute('data-rows', rows);
-        container.setAttribute('data-aspect-ratio', aspectRatio);
-
-        // Clear existing cells
+        container.setAttribute('data-aspect-ratio', gridConfig.aspectRatio);
         container.innerHTML = '';
 
-        // Generate cells
         for (let row = 0; row < rows; row++) {
             const rowContainer = document.createElement('div');
             rowContainer.className = 'igp-grid-row';
@@ -151,21 +135,15 @@
 
             for (let col = 0; col < columns; col++) {
                 const cellIndex = row * columns + col;
-                const cell = createGridCell(cellIndex, row, col);
-                cellsInRow.appendChild(cell);
+                cellsInRow.appendChild(createGridCell(cellIndex, row, col));
             }
             rowContainer.appendChild(cellsInRow);
             container.appendChild(rowContainer);
         }
 
-        // Reinitialize sortable - destroy all existing instances first
         destroySortable();
         initializeSortable();
-
-        // Update display with existing data
         updateGridDisplay();
-
-        // Clear the flag
         isRegeneratingGrid = false;
     }
 
@@ -176,26 +154,25 @@
         cell.setAttribute('data-row', row);
         cell.setAttribute('data-col', col);
 
-        // Add click event for media selection
         cell.addEventListener('click', function(e) {
             if (e.target.closest('.igp-cell-action')) {
-                return; // Don't open media library when clicking an action button
+                return;
             }
-            openMediaLibrary(index);
+            if (cell.classList.contains('has-image')) {
+                openPostSettings(index);
+            } else {
+                openMediaLibrary(index, false);
+            }
         });
 
         return cell;
     }
 
     function destroySortable() {
-        if (!sortableInstance) {
-            return;
-        }
+        if (!sortableInstance) return;
         if (Array.isArray(sortableInstance)) {
             sortableInstance.forEach(function(instance) {
-                if (instance && typeof instance.destroy === 'function') {
-                    instance.destroy();
-                }
+                if (instance && typeof instance.destroy === 'function') instance.destroy();
             });
         } else if (typeof sortableInstance.destroy === 'function') {
             sortableInstance.destroy();
@@ -204,12 +181,8 @@
     }
 
     function initializeSortable() {
-        // Initialize sortable for each row instead of the entire grid
         const rows = document.querySelectorAll('.igp-cells-in-row');
-
-        if (typeof Sortable === 'undefined') {
-            return;
-        }
+        if (typeof Sortable === 'undefined') return;
 
         destroySortable();
         sortableInstance = [];
@@ -220,16 +193,10 @@
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
-                group: 'grid-cells', // Allow dragging between rows
+                group: 'grid-cells',
                 filter: function(evt, item) {
-                    // Only allow dragging cells that have images, and never
-                    // start a drag from an action button.
-                    if (!item.classList.contains('has-image')) {
-                        return true;
-                    }
-                    if (evt.target && evt.target.closest && evt.target.closest('.igp-cell-action')) {
-                        return true;
-                    }
+                    if (!item.classList.contains('has-image')) return true;
+                    if (evt.target && evt.target.closest && evt.target.closest('.igp-cell-action')) return true;
                     return false;
                 },
                 onStart: function(evt) {
@@ -238,96 +205,92 @@
                 onEnd: function(evt) {
                     const oldRowIndex = parseInt(evt.from.closest('.igp-grid-row').getAttribute('data-row-index'));
                     const newRowIndex = parseInt(evt.to.closest('.igp-grid-row').getAttribute('data-row-index'));
-                    const oldColIndex = evt.oldIndex;
                     const columns = gridConfig.columns;
-                    // Dropping at the far edge of a row can report an index
-                    // equal to the column count; clamp it to the last column.
-                    const newColIndex = Math.min(evt.newIndex, columns - 1);
-
-                    const oldAbsIndex = oldRowIndex * columns + oldColIndex;
-                    const newAbsIndex = newRowIndex * columns + newColIndex;
+                    const oldAbsIndex = oldRowIndex * columns + evt.oldIndex;
+                    const newAbsIndex = newRowIndex * columns + Math.min(evt.newIndex, columns - 1);
 
                     evt.item.style.cursor = '';
 
                     if (oldAbsIndex !== newAbsIndex) {
                         const oldItem = gridData[oldAbsIndex];
                         const newItem = gridData[newAbsIndex];
-
-                        // Swap the two positions
-                        if (oldItem) {
-                            gridData[newAbsIndex] = oldItem;
-                        } else {
-                            delete gridData[newAbsIndex];
-                        }
-
-                        if (newItem) {
-                            gridData[oldAbsIndex] = newItem;
-                        } else {
-                            delete gridData[oldAbsIndex];
-                        }
+                        if (oldItem) { gridData[newAbsIndex] = oldItem; } else { delete gridData[newAbsIndex]; }
+                        if (newItem) { gridData[oldAbsIndex] = newItem; } else { delete gridData[oldAbsIndex]; }
                     }
 
-                    // Rebuild the grid so every row always has exactly
-                    // `columns` cells, regardless of how items were moved.
-                    setTimeout(function() {
-                        generateGrid();
-                    }, 0);
+                    setTimeout(function() { generateGrid(); }, 0);
                 }
             });
-
             sortableInstance.push(instance);
         });
     }
 
-    function openMediaLibrary(cellIndex) {
-        currentCellIndex = cellIndex;
-
-        // Create media frame if it doesn't exist
-        if (!mediaFrame) {
-            mediaFrame = wp.media({
-                title: 'Select Image for Grid',
-                button: {
-                    text: 'Use this image'
-                },
-                multiple: false,
-                library: {
-                    type: 'image'
-                }
-            });
-
-            // Handle image selection
-            mediaFrame.on('select', function() {
-                const attachment = mediaFrame.state().get('selection').first().toJSON();
-
-                if (currentCellIndex !== null) {
-                    const existing = gridData[currentCellIndex] || {};
-                    gridData[currentCellIndex] = {
-                        image_id: attachment.id,
-                        image_url: attachment.url,
-                        thumbnail_url: attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url,
-                        image_alt: attachment.alt || attachment.title || ''
-                    };
-                    // Preserve any Instagram metadata already set on the cell
-                    ['link_url', 'media_type', 'likes', 'comments'].forEach(function(key) {
-                        if (existing[key] !== undefined) {
-                            gridData[currentCellIndex][key] = existing[key];
-                        }
-                    });
-
-                    updateCellDisplay(currentCellIndex);
-                    currentCellIndex = null;
-                }
-            });
+    /**
+     * Convert a WP media attachment into a slide object.
+     */
+    function attachmentToSlide(att) {
+        const isVideo = att.type === 'video';
+        let thumb = att.url;
+        if (isVideo) {
+            // Videos have no native poster; leave it empty unless WordPress
+            // generated one, so the editor can ask for it explicitly.
+            thumb = (att.image && att.image.src) ? att.image.src : '';
+        } else if (att.sizes) {
+            thumb = (att.sizes.medium_large || att.sizes.large || att.sizes.medium || att.sizes.thumbnail || {}).url || att.url;
         }
+        return {
+            type: isVideo ? 'video' : 'image',
+            id: att.id,
+            url: att.url,
+            thumbnail_url: thumb,
+            alt: att.alt || att.title || ''
+        };
+    }
+
+    function openMediaLibrary(cellIndex, append) {
+        currentCellIndex = cellIndex;
+        appendToCell = !!append;
+
+        mediaFrame = wp.media({
+            title: 'Select media',
+            button: { text: 'Add to post' },
+            multiple: true,
+            library: { type: ['image', 'video'] }
+        });
+
+        mediaFrame.on('select', function() {
+            const selection = mediaFrame.state().get('selection');
+            const slides = [];
+            selection.each(function(model) {
+                slides.push(attachmentToSlide(model.toJSON()));
+            });
+
+            if (!slides.length || currentCellIndex === null) {
+                return;
+            }
+
+            if (appendToCell && gridData[currentCellIndex]) {
+                gridData[currentCellIndex].media = (gridData[currentCellIndex].media || []).concat(slides);
+            } else {
+                gridData[currentCellIndex] = {
+                    media: slides,
+                    caption: '',
+                    likes: 0,
+                    comments: 0,
+                    link_url: ''
+                };
+            }
+
+            updateCellDisplay(currentCellIndex);
+            if (activeModalIndex === currentCellIndex) {
+                refreshModalSlides();
+            }
+            currentCellIndex = null;
+        });
 
         mediaFrame.open();
     }
 
-    /**
-     * Get a cell element by its grid position (row-major order).
-     * @param {number} index
-     * @return {Element|null}
-     */
     function getCellByIndex(index) {
         return document.querySelectorAll('.igp-grid-cell')[index] || null;
     }
@@ -335,7 +298,6 @@
     function updateGridDisplay() {
         const cells = document.querySelectorAll('.igp-grid-cell');
         const columns = gridConfig.columns;
-
         cells.forEach(function(cell, index) {
             cell.setAttribute('data-index', index);
             cell.setAttribute('data-row', Math.floor(index / columns));
@@ -346,88 +308,71 @@
 
     function updateCellDisplay(index) {
         const cell = getCellByIndex(index);
-        if (cell) {
-            renderCell(cell, index);
-        }
+        if (cell) renderCell(cell, index);
     }
 
     function renderCell(cell, index) {
-        const data = gridData[index];
+        const post = gridData[index];
+        const media = post && post.media ? post.media : [];
 
-        if (data && data.image_url) {
+        if (post && media.length) {
             cell.classList.add('has-image');
             cell.removeAttribute('title');
-            cell.innerHTML = buildCellInner(data) + buildCellActions();
-            bindCellActions(cell, index);
+
+            const first = media[0];
+            const thumb = first.thumbnail_url || '';
+            let html = '';
+            if (thumb) {
+                html += '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(first.alt || '') + '" />';
+            } else {
+                html += '<span class="igp-cell-media-placeholder">' + IGP_ICONS.video + '</span>';
+            }
+
+            const badge = buildBadge(effectiveMediaType(post));
+            if (badge) html += badge;
+
+            // Carousel count bubble
+            if (media.length > 1) {
+                html += '<span class="igp-cell-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="14" height="14" rx="2"/><path d="M17 21H5a2 2 0 0 1-2-2V7"/></svg>' + media.length + '</span>';
+            }
+
+            const likes = parseInt(post.likes, 10) || 0;
+            const comments = parseInt(post.comments, 10) || 0;
+            if (likes > 0 || comments > 0) {
+                html += '<span class="igp-cell-overlay">' +
+                    '<span class="igp-cell-stat">' + IGP_ICONS.heart + '<span>' + formatCount(likes) + '</span></span>' +
+                    '<span class="igp-cell-stat">' + IGP_ICONS.comment + '<span>' + formatCount(comments) + '</span></span>' +
+                    '</span>';
+            }
+
+            if (post.link_url) {
+                html += '<span class="igp-cell-linkbadge" title="' + escapeHtml(post.link_url) + '">' + IGP_ICONS.link + '</span>';
+            }
+
+            html += '<div class="igp-cell-actions">' +
+                '<button type="button" class="igp-cell-action igp-remove-image" title="Remove post">' + IGP_ICONS.trash + '</button>' +
+                '</div>';
+
+            cell.innerHTML = html;
+
+            const removeBtn = cell.querySelector('.igp-remove-image');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeImage(index);
+                });
+            }
         } else {
             cell.classList.remove('has-image');
-            cell.innerHTML = '<div class="igp-cell-placeholder">' + IGP_ICONS.plus + '<span>Add image</span></div>';
+            cell.innerHTML = '<div class="igp-cell-placeholder">' + IGP_ICONS.plus + '<span>Add media</span></div>';
         }
     }
 
-    function buildCellInner(data) {
-        const thumb = escapeHtml(data.thumbnail_url || data.image_url);
-        const alt = escapeHtml(data.image_alt || '');
-
-        let html = '<img src="' + thumb + '" alt="' + alt + '" />';
-
-        const badge = buildBadge(data.media_type);
-        if (badge) {
-            html += badge;
-        }
-
-        const likes = parseInt(data.likes, 10) || 0;
-        const comments = parseInt(data.comments, 10) || 0;
-        if (likes > 0 || comments > 0) {
-            html += '<span class="igp-cell-overlay">' +
-                '<span class="igp-cell-stat">' + IGP_ICONS.heart + '<span>' + formatCount(likes) + '</span></span>' +
-                '<span class="igp-cell-stat">' + IGP_ICONS.comment + '<span>' + formatCount(comments) + '</span></span>' +
-                '</span>';
-        }
-
-        if (data.link_url) {
-            html += '<span class="igp-cell-linkbadge" title="' + escapeHtml(data.link_url) + '">' + IGP_ICONS.link + '</span>';
-        }
-
-        return html;
-    }
-
-    function buildBadge(mediaType) {
-        if (mediaType === 'carousel') {
-            return '<span class="igp-badge igp-badge--carousel">' + IGP_ICONS.carousel + '</span>';
-        }
-        if (mediaType === 'reel') {
-            return '<span class="igp-badge igp-badge--reel">' + IGP_ICONS.reel + '</span>';
-        }
-        if (mediaType === 'video') {
-            return '<span class="igp-badge igp-badge--video">' + IGP_ICONS.video + '</span>';
-        }
+    function buildBadge(type) {
+        if (type === 'carousel') return '<span class="igp-badge">' + IGP_ICONS.carousel + '</span>';
+        if (type === 'reel') return '<span class="igp-badge">' + IGP_ICONS.reel + '</span>';
+        if (type === 'video') return '<span class="igp-badge">' + IGP_ICONS.video + '</span>';
         return '';
-    }
-
-    function buildCellActions() {
-        return '<div class="igp-cell-actions">' +
-            '<button type="button" class="igp-cell-action igp-edit-cell" title="Post settings">' + IGP_ICONS.pencil + '</button>' +
-            '<button type="button" class="igp-cell-action igp-remove-image" title="Remove image">' + IGP_ICONS.trash + '</button>' +
-            '</div>';
-    }
-
-    function bindCellActions(cell, index) {
-        const editBtn = cell.querySelector('.igp-edit-cell');
-        if (editBtn) {
-            editBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                openPostSettings(index);
-            });
-        }
-
-        const removeBtn = cell.querySelector('.igp-remove-image');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                removeImage(index);
-            });
-        }
     }
 
     function removeImage(index) {
@@ -436,31 +381,33 @@
     }
 
     /**
-     * Open the Instagram-style "post settings" modal for a cell.
-     * @param {number} index
+     * Open the post settings modal (slides, caption, engagement).
      */
     function openPostSettings(index) {
-        const data = gridData[index];
-        if (!data) {
-            return;
-        }
+        const post = gridData[index];
+        if (!post) return;
+
+        activeModalIndex = index;
 
         const $modal = $(`
             <div class="igp-modal-backdrop">
-                <div class="igp-modal" role="dialog" aria-modal="true" aria-label="Post settings">
+                <div class="igp-modal igp-modal--post" role="dialog" aria-modal="true" aria-label="Post settings">
                     <div class="igp-modal-header">
-                        <h2>Post settings</h2>
+                        <h2>Post</h2>
                         <button type="button" class="igp-modal-close" aria-label="Close">&times;</button>
                     </div>
                     <div class="igp-modal-body">
+                        <div class="igp-slides" data-slides></div>
+                        <button type="button" class="button igp-add-media">Add media</button>
                         <label class="igp-field">
-                            <span>Link URL</span>
-                            <input type="url" class="igp-field-link" placeholder="https://example.com">
+                            <span>Caption</span>
+                            <textarea class="igp-field-caption" rows="3"></textarea>
                         </label>
                         <label class="igp-field">
                             <span>Media type</span>
                             <select class="igp-field-media">
-                                <option value="">Photo</option>
+                                <option value="">Auto</option>
+                                <option value="photo">Photo</option>
                                 <option value="carousel">Carousel</option>
                                 <option value="reel">Reel</option>
                                 <option value="video">Video</option>
@@ -476,9 +423,13 @@
                                 <input type="number" min="0" step="1" class="igp-field-comments">
                             </label>
                         </div>
+                        <label class="igp-field">
+                            <span>Link URL</span>
+                            <input type="url" class="igp-field-link" placeholder="https://example.com">
+                        </label>
                     </div>
                     <div class="igp-modal-footer">
-                        <button type="button" class="button igp-modal-remove">Remove image</button>
+                        <button type="button" class="button igp-modal-remove">Remove post</button>
                         <div class="igp-modal-footer-right">
                             <button type="button" class="button igp-modal-cancel">Cancel</button>
                             <button type="button" class="button button-primary igp-modal-save">Save</button>
@@ -488,59 +439,44 @@
             </div>
         `);
 
-        // Populate with the current values using .val() so user content is
-        // never interpolated into the markup.
-        $modal.find('.igp-field-link').val(data.link_url || '');
-        $modal.find('.igp-field-media').val(data.media_type || '');
-        $modal.find('.igp-field-likes').val(parseInt(data.likes, 10) || 0);
-        $modal.find('.igp-field-comments').val(parseInt(data.comments, 10) || 0);
+        $modal.find('.igp-field-caption').val(post.caption || '');
+        $modal.find('.igp-field-media').val(post.media_type || '');
+        $modal.find('.igp-field-likes').val(parseInt(post.likes, 10) || 0);
+        $modal.find('.igp-field-comments').val(parseInt(post.comments, 10) || 0);
+        $modal.find('.igp-field-link').val(post.link_url || '');
+
+        $('body').append($modal);
+        refreshModalSlides();
 
         function closeModal() {
             $(document).off('keyup.igpModal');
+            activeModalIndex = null;
             $modal.remove();
         }
 
         $modal.on('click', function(e) {
-            if (e.target === $modal[0]) {
-                closeModal();
-            }
+            if (e.target === $modal[0]) closeModal();
         });
         $modal.find('.igp-modal-close, .igp-modal-cancel').on('click', closeModal);
+        $modal.find('.igp-add-media').on('click', function() {
+            openMediaLibrary(activeModalIndex, true);
+        });
         $modal.find('.igp-modal-remove').on('click', function() {
             removeImage(index);
             closeModal();
         });
         $modal.find('.igp-modal-save').on('click', function() {
-            const link = $modal.find('.igp-field-link').val().trim();
+            const cell = gridData[index] || { media: [] };
+            cell.caption = $modal.find('.igp-field-caption').val();
             const media = $modal.find('.igp-field-media').val();
             const likes = Math.max(0, parseInt($modal.find('.igp-field-likes').val(), 10) || 0);
             const comments = Math.max(0, parseInt($modal.find('.igp-field-comments').val(), 10) || 0);
+            const link = $modal.find('.igp-field-link').val().trim();
 
-            const cell = gridData[index] || {};
-
-            if (link) {
-                cell.link_url = link;
-            } else {
-                delete cell.link_url;
-            }
-
-            if (media) {
-                cell.media_type = media;
-            } else {
-                delete cell.media_type;
-            }
-
-            if (likes > 0) {
-                cell.likes = likes;
-            } else {
-                delete cell.likes;
-            }
-
-            if (comments > 0) {
-                cell.comments = comments;
-            } else {
-                delete cell.comments;
-            }
+            if (media) { cell.media_type = media; } else { delete cell.media_type; }
+            if (likes > 0) { cell.likes = likes; } else { delete cell.likes; }
+            if (comments > 0) { cell.comments = comments; } else { delete cell.comments; }
+            if (link) { cell.link_url = link; } else { delete cell.link_url; }
 
             gridData[index] = cell;
             updateCellDisplay(index);
@@ -548,121 +484,198 @@
         });
 
         $(document).on('keyup.igpModal', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
+            if (e.key === 'Escape') closeModal();
+        });
+    }
+
+    function refreshModalSlides() {
+        if (activeModalIndex === null) return;
+        const $slides = $('.igp-modal--post [data-slides]');
+        const post = gridData[activeModalIndex];
+        if (!$slides.length || !post) return;
+
+        $slides.empty();
+        (post.media || []).forEach(function(slide, i) {
+            const $item = $('<div class="igp-slide-item"></div>');
+
+            if (slide.thumbnail_url) {
+                $item.append('<img src="' + escapeHtml(slide.thumbnail_url) + '" alt="">');
+            } else {
+                $item.append('<span class="igp-slide-empty">' + (slide.type === 'video' ? IGP_ICONS.video : IGP_ICONS.plus) + '</span>');
             }
+
+            if (slide.type === 'video') {
+                $item.append('<button type="button" class="igp-slide-poster" data-slide="' + i + '" title="Set poster image">' + IGP_ICONS.camera + '</button>');
+            }
+
+            $item.append('<button type="button" class="igp-slide-remove" data-slide="' + i + '" aria-label="Remove">&times;</button>');
+            $slides.append($item);
         });
 
-        $('body').append($modal);
-        $modal.find('.igp-field-link').trigger('focus');
+        $slides.off('click', '.igp-slide-remove').on('click', '.igp-slide-remove', function() {
+            const slideIndex = parseInt($(this).data('slide'), 10);
+            const current = gridData[activeModalIndex];
+            current.media.splice(slideIndex, 1);
+            if (!current.media.length) {
+                removeImage(activeModalIndex);
+                $('.igp-modal-backdrop').remove();
+                activeModalIndex = null;
+                return;
+            }
+            updateCellDisplay(activeModalIndex);
+            refreshModalSlides();
+        });
+
+        $slides.off('click', '.igp-slide-poster').on('click', '.igp-slide-poster', function() {
+            openPosterPicker(activeModalIndex, parseInt($(this).data('slide'), 10));
+        });
+    }
+
+    /**
+     * Choose a poster image for a video slide.
+     */
+    function openPosterPicker(cellIndex, slideIndex) {
+        const post = gridData[cellIndex];
+        if (!post || !post.media || !post.media[slideIndex]) {
+            return;
+        }
+
+        const frame = wp.media({
+            title: 'Select poster image',
+            button: { text: 'Use as poster' },
+            multiple: false,
+            library: { type: 'image' }
+        });
+
+        frame.on('select', function() {
+            const att = frame.state().get('selection').first().toJSON();
+            let url = att.url;
+            if (att.sizes) {
+                url = (att.sizes.large || att.sizes.medium_large || att.sizes.medium || att.sizes.thumbnail || {}).url || att.url;
+            }
+            post.media[slideIndex].thumbnail_url = url;
+            post.media[slideIndex].poster_id = att.id;
+            updateCellDisplay(cellIndex);
+            refreshModalSlides();
+        });
+
+        frame.open();
+    }
+
+    // ---------- Avatar picker ----------
+    function updateAvatarPreview(url) {
+        const $preview = $('#igp-avatar-preview');
+        if (url) {
+            $preview.removeClass('is-empty').html('<img src="' + escapeHtml(url) + '" alt="">');
+            $('#igp-remove-avatar').show();
+        } else {
+            $preview.addClass('is-empty').html('<span class="dashicons dashicons-format-image"></span>');
+            $('#igp-remove-avatar').hide();
+        }
     }
 
     function bindEvents() {
-        // Grid dimension changes - update state first, then regenerate
         $('#grid-columns, #grid-rows, #grid-aspect-ratio').on('change', function() {
             syncConfigFromDOM();
             generateGrid();
         });
 
-        // Form submission
         $('#igp-grid-form').on('submit', function(e) {
             e.preventDefault();
             saveGrid();
         });
 
-        // Copy shortcode
-        $(document).on('click', '.igp-copy-shortcode', function() {
+        // Copy profile URL
+        $(document).on('click', '.igp-copy-url', function() {
             const $btn = $(this);
-            const shortcode = $btn.data('shortcode');
-            navigator.clipboard.writeText(shortcode).then(function() {
-                const originalText = $btn.text();
+            navigator.clipboard.writeText($btn.data('url')).then(function() {
+                const original = $btn.text();
                 $btn.text('Copied!');
-                setTimeout(function() {
-                    $btn.text(originalText);
-                }, 2000);
+                setTimeout(function() { $btn.text(original); }, 2000);
             });
         });
 
-        // Row management buttons (add above/below)
         $(document).on('click', '.igp-add-row-above', function(e) {
             e.preventDefault();
-            const rowIndex = parseInt($(this).data('row'));
-            addRow(rowIndex);
+            addRow(parseInt($(this).data('row')));
         });
 
         $(document).on('click', '.igp-add-row-below', function(e) {
             e.preventDefault();
-            const rowIndex = parseInt($(this).data('row'));
-            addRow(rowIndex + 1);
+            addRow(parseInt($(this).data('row')) + 1);
         });
 
-        // Right-click a filled cell to open its post settings
-        $(document).on('contextmenu', '.igp-grid-cell.has-image', function(e) {
-            e.preventDefault();
-            openPostSettings($(this).data('index'));
+        // Avatar
+        $('#igp-select-avatar').on('click', function() {
+            avatarFrame = wp.media({
+                title: 'Select avatar',
+                button: { text: 'Use image' },
+                multiple: false,
+                library: { type: 'image' }
+            });
+            avatarFrame.on('select', function() {
+                const att = avatarFrame.state().get('selection').first().toJSON();
+                $('#igp-profile-avatar-url').val(att.url);
+                updateAvatarPreview(att.url);
+            });
+            avatarFrame.open();
+        });
+
+        $('#igp-remove-avatar').on('click', function() {
+            $('#igp-profile-avatar-url').val('');
+            updateAvatarPreview('');
         });
     }
 
     function addRow(position) {
-        // Prevent any issues during regeneration
-        if (isRegeneratingGrid) {
-            return;
-        }
+        if (isRegeneratingGrid) return;
 
         const columns = gridConfig.columns;
-        const currentRows = gridConfig.rows;
-
-        // Create new grid data object
         const newGridData = {};
 
-        // Copy existing grid data, shifting rows at or after the insertion position
         Object.keys(gridData).forEach(function(key) {
             const oldIndex = parseInt(key);
             const oldRow = Math.floor(oldIndex / columns);
             const oldCol = oldIndex % columns;
-
             let newIndex;
             if (oldRow >= position) {
-                // Shift down by one row
-                const newRow = oldRow + 1;
-                newIndex = newRow * columns + oldCol;
+                newIndex = (oldRow + 1) * columns + oldCol;
             } else {
-                // Keep in same position
                 newIndex = oldIndex;
             }
-
-            // Copy the data to the new position (deep copy to prevent reference issues)
             newGridData[newIndex] = Object.assign({}, gridData[key]);
         });
 
-        // Update the global grid data
         gridData = newGridData;
-
-        // Update the grid config state
-        gridConfig.rows = currentRows + 1;
-
-        // Sync the new value to DOM (won't trigger change event during regeneration)
+        gridConfig.rows = gridConfig.rows + 1;
         syncConfigToDOM();
-
-        // Regenerate the grid display with the new row count and updated data
         generateGrid();
+    }
+
+    function collectProfileData() {
+        return {
+            username: $('#igp-profile-username').val() || '',
+            display_name: $('#igp-profile-display-name').val() || '',
+            bio: $('#igp-profile-bio').val() || '',
+            website: $('#igp-profile-website').val() || '',
+            avatar_url: $('#igp-profile-avatar-url').val() || '',
+            followers: parseInt($('#igp-profile-followers').val(), 10) || 0,
+            following: parseInt($('#igp-profile-following').val(), 10) || 0
+        };
     }
 
     function saveGrid() {
         const $form = $('#igp-grid-form');
         const $submitBtn = $('#submit');
 
-        // Validate form
         const name = $('#grid-name').val().trim();
         if (!name) {
-            alert('Please enter a grid name.');
+            alert('Please enter an internal name.');
             return;
         }
 
-        // Sync config from DOM one more time before saving
         syncConfigFromDOM();
 
-        // Prepare data
         const formData = {
             action: 'igp_save_grid',
             nonce: igp_ajax.nonce,
@@ -672,30 +685,33 @@
             columns: gridConfig.columns,
             rows: gridConfig.rows,
             aspect_ratio: gridConfig.aspectRatio,
-            grid_data: JSON.stringify(gridData)
+            grid_data: JSON.stringify(gridData),
+            profile_data: JSON.stringify(collectProfileData())
         };
 
-        // Show loading state
         $submitBtn.prop('disabled', true).val('Saving...');
         $form.addClass('igp-loading');
         $('#igp-grid-editor').addClass('igp-loading-overlay');
 
-        // Send AJAX request
         $.post(igp_ajax.ajax_url, formData)
             .done(function(response) {
                 if (response.success) {
                     showMessage(response.data.message, 'success');
 
-                    // Update grid ID if this was a new grid
-                    if (response.data.grid_id && !$('#grid-id').val()) {
-                        $('#grid-id').val(response.data.grid_id);
+                    if (response.data.grid_id) {
+                        const id = response.data.grid_id;
+                        const url = window.igpProfileBase + id + '/';
+                        $('#grid-id').val(id);
+                        $('#igp-profile-url').text(url);
+                        $('.igp-copy-url').data('url', url).attr('data-url', url);
+                        $('#igp-profile-url-display').show();
+                        $('#igp-view-profile').attr('href', url).show();
 
-                        // Update URL and show shortcode
-                        const newUrl = window.location.href + '&grid_id=' + response.data.grid_id;
-                        window.history.replaceState({}, '', newUrl);
-
-                        // Add shortcode section
-                        addShortcodeSection(response.data.grid_id);
+                        if (!window.igpIsEdit) {
+                            window.igpIsEdit = true;
+                            const newUrl = window.location.href + '&grid_id=' + id;
+                            window.history.replaceState({}, '', newUrl);
+                        }
                     }
                 } else {
                     showMessage(response.data.message || igp_ajax.strings.error_occurred, 'error');
@@ -705,40 +721,17 @@
                 showMessage(igp_ajax.strings.error_occurred, 'error');
             })
             .always(function() {
-                $submitBtn.prop('disabled', false).val($('#grid-id').val() ? 'Update Grid' : 'Save Grid');
+                $submitBtn.prop('disabled', false).val($('#grid-id').val() ? 'Update Profile' : 'Save Profile');
                 $form.removeClass('igp-loading');
                 $('#igp-grid-editor').removeClass('igp-loading-overlay');
             });
     }
 
     function showMessage(message, type) {
-        // Remove existing messages
         $('.igp-message').remove();
-
-        // Create new message
-        const $message = $('<div class="igp-message ' + type + '">' + message + '</div>');
+        const $message = $('<div class="igp-message ' + type + '"></div>').text(message);
         $message.insertAfter('.wrap h1');
-
-        // Auto-hide after 5 seconds
-        setTimeout(function() {
-            $message.fadeOut();
-        }, 5000);
-    }
-
-    function addShortcodeSection(gridId) {
-        if ($('.igp-shortcode-display').length === 0) {
-            const shortcodeHtml = `
-                <div class="igp-shortcode-display">
-                    <h3>Shortcode</h3>
-                    <p>Use this shortcode to display the grid on your site:</p>
-                    <code>[instagram_grid id="${escapeHtml(gridId.toString())}"]</code>
-                    <button type="button" class="button button-small igp-copy-shortcode" data-shortcode='[instagram_grid id="${escapeHtml(gridId.toString())}"]'>
-                        Copy Shortcode
-                    </button>
-                </div>
-            `;
-            $(shortcodeHtml).insertAfter('#igp-grid-form');
-        }
+        setTimeout(function() { $message.fadeOut(); }, 5000);
     }
 
 })(jQuery);

@@ -38,8 +38,8 @@ if (!defined('WPINC')) {
                     <th scope="col" class="manage-column column-dimensions">
                         <?php _e('Dimensions', 'instagram-grid-preview'); ?>
                     </th>
-                    <th scope="col" class="manage-column column-shortcode">
-                        <?php _e('Shortcode', 'instagram-grid-preview'); ?>
+                    <th scope="col" class="manage-column column-profile">
+                        <?php _e('Profile', 'instagram-grid-preview'); ?>
                     </th>
                     <th scope="col" class="manage-column column-date">
                         <?php _e('Date', 'instagram-grid-preview'); ?>
@@ -61,6 +61,11 @@ if (!defined('WPINC')) {
                                         <?php _e('Edit', 'instagram-grid-preview'); ?>
                                     </a> |
                                 </span>
+                                <span class="view">
+                                    <a href="<?php echo esc_url(home_url('/instagram-grid/' . intval($grid->id) . '/')); ?>" target="_blank" rel="noopener noreferrer">
+                                        <?php _e('View profile', 'instagram-grid-preview'); ?>
+                                    </a> |
+                                </span>
                                 <span class="duplicate">
                                     <a href="#" class="igp-duplicate-grid" data-grid-id="<?php echo esc_attr($grid->id); ?>">
                                         <?php _e('Duplicate', 'instagram-grid-preview'); ?>
@@ -78,23 +83,17 @@ if (!defined('WPINC')) {
                         </td>
                         <td class="column-preview" data-colname="<?php _e('Preview', 'instagram-grid-preview'); ?>">
                             <?php
-                            $mini_data = json_decode($grid->grid_data, true);
-                            if (!is_array($mini_data)) {
-                                $mini_data = array();
-                            }
-                            ksort($mini_data);
+                            $mini_posts = IGP_Grid_Model::normalize_grid_data(json_decode($grid->grid_data, true));
+                            ksort($mini_posts);
                             $mini_cells = 0;
                             ?>
                             <div class="igp-mini-grid">
-                                <?php foreach ($mini_data as $cell) : ?>
+                                <?php foreach ($mini_posts as $mini_post) : ?>
                                     <?php
                                     if ($mini_cells >= 9) {
                                         break;
                                     }
-                                    if (empty($cell['image_url'])) {
-                                        continue;
-                                    }
-                                    $thumb = !empty($cell['thumbnail_url']) ? $cell['thumbnail_url'] : $cell['image_url'];
+                                    $thumb = $mini_post['media'][0]['thumbnail_url'];
                                     ?>
                                     <span><img src="<?php echo esc_url($thumb); ?>" alt="" /></span>
                                     <?php $mini_cells++; ?>
@@ -111,9 +110,11 @@ if (!defined('WPINC')) {
                         <td class="column-dimensions" data-colname="<?php _e('Dimensions', 'instagram-grid-preview'); ?>">
                             <?php echo intval($grid->columns) . ' × ' . intval($grid->rows); ?>
                         </td>
-                        <td class="column-shortcode" data-colname="<?php _e('Shortcode', 'instagram-grid-preview'); ?>">
-                            <code>[instagram_grid id="<?php echo esc_attr($grid->id); ?>"]</code>
-                            <button type="button" class="button button-small igp-copy-shortcode" data-shortcode='[instagram_grid id="<?php echo esc_attr($grid->id); ?>"]'>
+                        <td class="column-profile" data-colname="<?php _e('Profile', 'instagram-grid-preview'); ?>">
+                            <a href="<?php echo esc_url(home_url('/instagram-grid/' . intval($grid->id) . '/')); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php echo esc_html(home_url('/instagram-grid/' . intval($grid->id) . '/')); ?>
+                            </a>
+                            <button type="button" class="button button-small igp-copy-profile" data-url="<?php echo esc_attr(home_url('/instagram-grid/' . intval($grid->id) . '/')); ?>">
                                 <?php _e('Copy', 'instagram-grid-preview'); ?>
                             </button>
                         </td>
@@ -211,11 +212,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle copy shortcode
-    document.querySelectorAll('.igp-copy-shortcode').forEach(function(button) {
+    // Handle copy profile URL
+    document.querySelectorAll('.igp-copy-profile').forEach(function(button) {
         button.addEventListener('click', function() {
-            const shortcode = this.dataset.shortcode;
-            navigator.clipboard.writeText(shortcode).then(function() {
+            const url = this.dataset.url;
+            navigator.clipboard.writeText(url).then(function() {
                 const originalText = button.textContent;
                 button.textContent = '<?php _e('Copied!', 'instagram-grid-preview'); ?>';
                 setTimeout(function() {

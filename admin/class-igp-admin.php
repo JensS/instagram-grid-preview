@@ -217,32 +217,58 @@ class IGP_Admin {
                 }
 
                 $validated_cell = array();
+                $media = array();
 
-                if (isset($cell['image_id'])) {
-                    $validated_cell['image_id'] = intval($cell['image_id']);
+                if (isset($cell['media']) && is_array($cell['media'])) {
+                    foreach ($cell['media'] as $slide) {
+                        $clean_slide = $this->sanitize_media_slide($slide);
+                        if ($clean_slide) {
+                            $media[] = $clean_slide;
+                        }
+                    }
                 }
 
-                if (isset($cell['image_url'])) {
-                    $validated_cell['image_url'] = esc_url_raw($cell['image_url']);
+                // Support the legacy single-image format by promoting it to a slide.
+                if (empty($media) && !empty($cell['image_url'])) {
+                    $legacy_slide = $this->sanitize_media_slide(array(
+                        'type' => 'image',
+                        'id' => isset($cell['image_id']) ? $cell['image_id'] : 0,
+                        'url' => $cell['image_url'],
+                        'thumbnail_url' => isset($cell['thumbnail_url']) ? $cell['thumbnail_url'] : '',
+                        'alt' => isset($cell['image_alt']) ? $cell['image_alt'] : '',
+                    ));
+                    if ($legacy_slide) {
+                        $media[] = $legacy_slide;
+                    }
                 }
 
-                if (isset($cell['thumbnail_url'])) {
-                    $validated_cell['thumbnail_url'] = esc_url_raw($cell['thumbnail_url']);
+                if (empty($media)) {
+                    continue;
                 }
 
-                if (isset($cell['image_alt'])) {
-                    $validated_cell['image_alt'] = sanitize_text_field($cell['image_alt']);
+                $validated_cell['media'] = $media;
+
+                // Mirror the first slide into legacy fields for backwards
+                // compatibility with older readers.
+                $first = $media[0];
+                $validated_cell['image_id'] = $first['id'];
+                $validated_cell['image_url'] = $first['url'];
+                $validated_cell['thumbnail_url'] = $first['thumbnail_url'];
+                $validated_cell['image_alt'] = $first['alt'];
+
+                if (isset($cell['media_type'])) {
+                    $media_type = sanitize_key($cell['media_type']);
+                    if (in_array($media_type, array('photo', 'carousel', 'reel', 'video'), true)) {
+                        $validated_cell['media_type'] = $media_type;
+                    }
+                }
+
+                if (isset($cell['caption'])) {
+                    $validated_cell['caption'] = sanitize_textarea_field($cell['caption']);
                 }
 
                 if (isset($cell['link_url']) && !empty($cell['link_url'])) {
                     $validated_cell['link_url'] = esc_url_raw($cell['link_url']);
-                }
-
-                if (isset($cell['media_type'])) {
-                    $media_type = sanitize_key($cell['media_type']);
-                    if (in_array($media_type, array('carousel', 'reel', 'video'), true)) {
-                        $validated_cell['media_type'] = $media_type;
-                    }
                 }
 
                 if (isset($cell['likes'])) {
@@ -253,12 +279,13 @@ class IGP_Admin {
                     $validated_cell['comments'] = max(0, intval($cell['comments']));
                 }
 
-                // Only add the cell if it has at least an image_url
-                if (!empty($validated_cell) && isset($validated_cell['image_url'])) {
-                    $grid_data[intval($index)] = $validated_cell;
-                }
+                $grid_data[intval($index)] = $validated_cell;
             }
         }
+
+        // Validate and sanitize profile data
+        $raw_profile_data = isset($_POST['profile_data']) ? json_decode(stripslashes($_POST['profile_data']), true) : array();
+        $profile_data = $this->sanitize_profile_data($raw_profile_data);
 
         $data = array(
             'name' => $name,
@@ -266,7 +293,8 @@ class IGP_Admin {
             'columns' => $columns,
             'rows' => $rows,
             'aspect_ratio' => $aspect_ratio,
-            'grid_data' => $grid_data
+            'grid_data' => $grid_data,
+            'profile_data' => $profile_data
         );
         
         if ($grid_id > 0) {
@@ -281,7 +309,8 @@ class IGP_Admin {
                 $columns,
                 $rows,
                 $aspect_ratio,
-                wp_json_encode($grid_data)
+                wp_json_encode($grid_data),
+                wp_json_encode($profile_data)
             );
             $response_id = $result;
         }
@@ -355,7 +384,8 @@ class IGP_Admin {
             $grid['columns'],
             $grid['rows'],
             $grid['aspect_ratio'],
-            wp_json_encode($grid['grid_data'])
+            wp_json_encode($grid['grid_data']),
+            wp_json_encode($grid['profile_data'])
         );
         
         if ($result) {
@@ -391,6 +421,59 @@ class IGP_Admin {
                 'message' => __('Grid not found.', 'instagram-grid-preview')
             ));
         }
+    }
+
+    /**
+     * Sanitize a single media slide (image or video).
+     *
+     * @since    1.2.0
+     * @param    array         $slide    Raw slide data
+     * @return   array|null    Sanitized slide or null when invalid
+     */
+    private function sanitize_media_slide($slide) {
+        if (!is_array($slide) || empty($slide['url'])) {
+            return null;
+        }
+
+        $url = esc_url_raw($slide['url']);
+        if (empty($url)) {
+            return null;
+        }
+
+        $type = (isset($slide['type']) && 'video' === $slide['type']) ? 'video' : 'image';
+        // Videos need an explicit poster image; don't fall back to the file.
+        $thumb = !empty($slide['thumbnail_url']) ? esc_url_raw($slide['thumbnail_url']) : ('video' === $type ? '' : $url);
+
+        return array(
+            'type' => $type,
+            'id' => isset($slide['id']) ? intval($slide['id']) : 0,
+            'url' => $url,
+            'thumbnail_url' => $thumb,
+            'alt' => isset($slide['alt']) ? sanitize_text_field($slide['alt']) : '',
+        );
+    }
+
+    /**
+     * Sanitize the profile data array.
+     *
+     * @since    1.2.0
+     * @param    array    $profile    Raw profile data
+     * @return   array    Sanitized profile data
+     */
+    private function sanitize_profile_data($profile) {
+        if (!is_array($profile)) {
+            return array();
+        }
+
+        return array(
+            'username' => isset($profile['username']) ? sanitize_text_field($profile['username']) : '',
+            'display_name' => isset($profile['display_name']) ? sanitize_text_field($profile['display_name']) : '',
+            'bio' => isset($profile['bio']) ? sanitize_textarea_field($profile['bio']) : '',
+            'website' => isset($profile['website']) ? esc_url_raw($profile['website']) : '',
+            'avatar_url' => isset($profile['avatar_url']) ? esc_url_raw($profile['avatar_url']) : '',
+            'followers' => isset($profile['followers']) ? max(0, intval($profile['followers'])) : 0,
+            'following' => isset($profile['following']) ? max(0, intval($profile['following'])) : 0,
+        );
     }
 
     /**
