@@ -23,18 +23,33 @@ $posts = IGP_Grid_Model::normalize_grid_data($grid['grid_data']);
 
 $date = date_i18n(get_option('date_format'), strtotime($grid['created_at']));
 $posts_json = array();
+$needs_hls = false;
 
 foreach ($posts as $index => $post) {
     $media = array();
     foreach ($post['media'] as $slide) {
-        $media[] = array(
+        $item = array(
             'type' => $slide['type'],
+            'source' => isset($slide['source']) ? $slide['source'] : 'upload',
+            'bunny_id' => isset($slide['bunny_id']) ? $slide['bunny_id'] : '',
             'url' => $slide['url'],
             'display_url' => IGP_Public::get_display_url($slide),
             'display_srcset' => IGP_Public::get_display_srcset($slide),
             'thumbnail_url' => $slide['thumbnail_url'],
             'alt' => $slide['alt'],
         );
+
+        if ('bunny' === $item['source'] && !empty($item['bunny_id'])) {
+            $playback = IGP_Bunny::playback($item['bunny_id']);
+            $item['hls'] = isset($playback['hls']) ? $playback['hls'] : '';
+            $item['mp4'] = isset($playback['mp4']) ? $playback['mp4'] : '';
+            $item['thumbnail_url'] = IGP_Bunny::resolve_poster($slide);
+            if (!empty($item['hls'])) {
+                $needs_hls = true;
+            }
+        }
+
+        $media[] = $item;
     }
 
     $posts_json[$index] = array(
@@ -161,6 +176,9 @@ $igp_data = array(
 </div>
 
 <script type="application/json" id="igp-profile-data"><?php echo wp_json_encode($igp_data); ?></script>
+<?php if ($needs_hls) : ?>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" integrity="sha384-9v3HcdYrO3D+OPDTjZ40RXocgE4GtXVCd3/mCS62JsM93JXgI1afJVuwjFvsu6ni" crossorigin="anonymous"></script>
+<?php endif; ?>
 <script src="<?php echo esc_url(IGP_PLUGIN_URL . 'public/js/igp-profile.js?ver=' . IGP_VERSION); ?>"></script>
 </body>
 </html>

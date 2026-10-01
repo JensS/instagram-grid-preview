@@ -71,6 +71,18 @@
 
     var viewer = null;
     var state = { index: null, slide: 0 };
+    var currentHls = null;
+
+    function destroyHls() {
+        if (currentHls) {
+            try {
+                currentHls.destroy();
+            } catch (e) {
+                // ignore
+            }
+            currentHls = null;
+        }
+    }
 
     function buildViewer() {
         var html = '' +
@@ -133,19 +145,36 @@
             return;
         }
 
+        destroyHls();
         mediaEl.innerHTML = '';
 
         var el;
         if (slide.type === 'video') {
             el = document.createElement('video');
             el.className = 'igp-viewer-slide';
-            el.src = slide.url;
             el.controls = true;
             el.autoplay = true;
             el.playsInline = true;
             el.muted = true;
             if (slide.thumbnail_url) {
                 el.poster = slide.thumbnail_url;
+            }
+
+            var hlsSrc = slide.hls || '';
+            if (hlsSrc) {
+                if (window.Hls && window.Hls.isSupported()) {
+                    currentHls = new window.Hls();
+                    currentHls.loadSource(hlsSrc);
+                    currentHls.attachMedia(el);
+                } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
+                    el.src = hlsSrc;
+                } else if (slide.mp4) {
+                    el.src = slide.mp4;
+                } else {
+                    el.src = hlsSrc;
+                }
+            } else {
+                el.src = slide.url;
             }
         } else {
             el = document.createElement('img');
@@ -245,6 +274,7 @@
         if (video) {
             video.pause();
         }
+        destroyHls();
         viewer.setAttribute('hidden', '');
         document.body.style.overflow = '';
         document.removeEventListener('keydown', onKeydown);

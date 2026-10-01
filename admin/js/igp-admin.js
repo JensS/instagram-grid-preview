@@ -242,11 +242,84 @@
         }
         return {
             type: isVideo ? 'video' : 'image',
+            source: 'upload',
+            bunny_id: '',
             id: att.id,
             url: att.url,
             thumbnail_url: thumb,
             alt: att.alt || att.title || ''
         };
+    }
+
+    /**
+     * Extract a Bunny video GUID from a raw ID or URL.
+     */
+    function extractBunnyId(input) {
+        input = (input || '').trim();
+        var match = input.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+        if (match) return match[1];
+        match = input.match(/\/embed\/\d+\/([a-f0-9-]{16,64})/i);
+        if (match) return match[1];
+        if (/^[a-f0-9-]{16,64}$/i.test(input)) return input;
+        return '';
+    }
+
+    /**
+     * Append Bunny Stream videos to a post as slides.
+     */
+    function addBunnySlides(cellIndex, videos) {
+        if (!videos || !videos.length) {
+            return;
+        }
+
+        const post = gridData[cellIndex] || { media: [], caption: '', likes: 0, comments: 0, link_url: '' };
+        if (!post.media) {
+            post.media = [];
+        }
+
+        videos.forEach(function(video) {
+            post.media.push({
+                type: 'video',
+                source: 'bunny',
+                bunny_id: video.guid,
+                id: 0,
+                url: '',
+                thumbnail_url: video.thumbnailUrl || '',
+                alt: video.title || ''
+            });
+        });
+
+        gridData[cellIndex] = post;
+        updateCellDisplay(cellIndex);
+        refreshModalSlides();
+    }
+
+    /**
+     * Add a Bunny video using the theme picker, falling back to a prompt.
+     */
+    function addBunnyVideo(cellIndex) {
+        if (window.slayBunnyPicker && window.slayBunnyPicker.available()) {
+            window.slayBunnyPicker.open({
+                title: 'Add Bunny video',
+                multiple: true,
+                buttonText: 'Add',
+                onSelect: function(videos) {
+                    addBunnySlides(cellIndex, videos);
+                }
+            });
+            return;
+        }
+
+        const input = window.prompt('Bunny video ID or URL:');
+        if (!input) {
+            return;
+        }
+        const guid = extractBunnyId(input);
+        if (!guid) {
+            window.alert('That does not look like a Bunny Stream video ID.');
+            return;
+        }
+        addBunnySlides(cellIndex, [{ guid: guid, title: '', thumbnailUrl: '' }]);
     }
 
     /**
@@ -419,7 +492,10 @@
                     </div>
                     <div class="igp-modal-body">
                         <div class="igp-slides" data-slides></div>
-                        <button type="button" class="button igp-add-media">Add media</button>
+                        <div class="igp-media-buttons">
+                            <button type="button" class="button igp-add-media">Add media</button>
+                            <button type="button" class="button igp-add-bunny">Add Bunny video</button>
+                        </div>
                         <label class="igp-field">
                             <span>Caption</span>
                             <textarea class="igp-field-caption" rows="3"></textarea>
@@ -482,6 +558,9 @@
         $modal.find('.igp-add-media').on('click', function() {
             openMediaLibrary(activeModalIndex, true);
         });
+        $modal.find('.igp-add-bunny').on('click', function() {
+            addBunnyVideo(activeModalIndex);
+        });
         $modal.find('.igp-modal-remove').on('click', function() {
             removeImage(index);
             closeModal();
@@ -527,6 +606,10 @@
 
             if (slide.type === 'video') {
                 $item.append('<button type="button" class="igp-slide-poster" data-slide="' + i + '" title="Set poster image">' + IGP_ICONS.camera + '</button>');
+            }
+
+            if (slide.source === 'bunny') {
+                $item.append('<span class="igp-slide-bunny" title="Bunny Stream video">Bunny</span>');
             }
 
             $item.append('<button type="button" class="igp-slide-remove" data-slide="' + i + '" aria-label="Remove">&times;</button>');

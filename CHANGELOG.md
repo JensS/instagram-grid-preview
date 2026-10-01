@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-01
+
+### Added
+- Bunny Stream support: posts can now include Bunny videos (by GUID) instead of only uploaded files
+- Reuses the site's shared Bunny Stream settings and the theme's Bunny video picker
+- Bunny videos play as HLS with an MP4 fallback; hls.js is loaded only on pages that contain a Bunny slide
+
+### Fixed
+- Fixed "Failed to save grid" on existing installs: the `profile_data` column migration now runs automatically on plugin update (previously it only ran on activation). Saves also skip `profile_data` gracefully if the column is not present yet
+
 ## [1.2.1] - 2026-10-01
 
 ### Fixed
@@ -113,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON-based grid data storage
 - i18n ready with translation support
 
-[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/JensS/instagram-grid-preview/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/JensS/instagram-grid-preview/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JensS/instagram-grid-preview/compare/v1.0.3...v1.1.0

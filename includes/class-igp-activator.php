@@ -22,9 +22,34 @@ class IGP_Activator {
     public static function activate() {
         self::create_tables();
         self::set_default_capabilities();
-        
+
+        update_option('igp_db_version', IGP_DB_VERSION);
+
         // Flush rewrite rules
         flush_rewrite_rules();
+    }
+
+    /**
+     * Run schema migrations when the stored DB version is behind.
+     *
+     * Safe to call on every request: it returns immediately once the schema
+     * is up to date. This is what updates the table after an auto-update,
+     * since register_activation_hook() does not fire then.
+     *
+     * @since    1.2.2
+     */
+    public static function maybe_upgrade() {
+        $db_version = get_option('igp_db_version');
+
+        if ($db_version === IGP_DB_VERSION) {
+            return;
+        }
+
+        self::create_tables();
+        self::set_default_capabilities();
+        update_option('igp_db_version', IGP_DB_VERSION);
+
+        flush_rewrite_rules(false);
     }
 
     /**

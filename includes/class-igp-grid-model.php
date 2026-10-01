@@ -24,6 +24,32 @@ class IGP_Grid_Model {
     }
 
     /**
+     * Whether a column exists on the grids table.
+     *
+     * Guards writes so a not-yet-migrated install never fails to save.
+     *
+     * @since    1.2.2
+     * @param    string    $column    Column name
+     * @return   bool
+     */
+    private static function has_column($column) {
+        global $wpdb;
+
+        static $cache = array();
+
+        if (isset($cache[$column])) {
+            return $cache[$column];
+        }
+
+        $table = self::get_table_name();
+        $found = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table` LIKE %s", $column));
+
+        $cache[$column] = !empty($found);
+
+        return $cache[$column];
+    }
+
+    /**
      * Get all grids
      *
      * @since    1.0.0
@@ -86,19 +112,22 @@ class IGP_Grid_Model {
             $aspect_ratio = '1:1';
         }
         
-        $result = $wpdb->insert(
-            $table_name,
-            array(
-                'name' => sanitize_text_field($name),
-                'description' => sanitize_textarea_field($description),
-                'columns' => intval($columns),
-                'rows' => intval($rows),
-                'aspect_ratio' => $aspect_ratio,
-                'grid_data' => $grid_data,
-                'profile_data' => $profile_data
-            ),
-            array('%s', '%s', '%d', '%d', '%s', '%s', '%s')
+        $insert = array(
+            'name' => sanitize_text_field($name),
+            'description' => sanitize_textarea_field($description),
+            'columns' => intval($columns),
+            'rows' => intval($rows),
+            'aspect_ratio' => $aspect_ratio,
+            'grid_data' => $grid_data,
         );
+        $format = array('%s', '%s', '%d', '%d', '%s', '%s');
+
+        if (self::has_column('profile_data')) {
+            $insert['profile_data'] = $profile_data;
+            $format[] = '%s';
+        }
+
+        $result = $wpdb->insert($table_name, $insert, $format);
         
         return $result ? $wpdb->insert_id : false;
     }
@@ -151,7 +180,7 @@ class IGP_Grid_Model {
             $format[] = '%s';
         }
 
-        if (isset($data['profile_data'])) {
+        if (isset($data['profile_data']) && self::has_column('profile_data')) {
             $update_data['profile_data'] = wp_json_encode($data['profile_data']);
             $format[] = '%s';
         }
@@ -269,17 +298,30 @@ class IGP_Grid_Model {
 
         if (isset($cell['media']) && is_array($cell['media'])) {
             foreach ($cell['media'] as $slide) {
-                if (!is_array($slide) || empty($slide['url'])) {
+                if (!is_array($slide)) {
                     continue;
                 }
+
+                $is_bunny = (isset($slide['source']) && 'bunny' === $slide['source'] && !empty($slide['bunny_id']));
+
+                // A Bunny slide has no local URL; everything else needs one.
+                if (empty($slide['url']) && !$is_bunny) {
+                    continue;
+                }
+
                 $slide_type = (isset($slide['type']) && 'video' === $slide['type']) ? 'video' : 'image';
+                $url = isset($slide['url']) ? $slide['url'] : '';
+
                 // A video has no native poster; never fall back to the video
                 // file itself as an image source.
-                $thumb = !empty($slide['thumbnail_url']) ? $slide['thumbnail_url'] : ('video' === $slide_type ? '' : $slide['url']);
+                $thumb = !empty($slide['thumbnail_url']) ? $slide['thumbnail_url'] : ('video' === $slide_type ? '' : $url);
+
                 $media[] = array(
                     'type' => $slide_type,
+                    'source' => $is_bunny ? 'bunny' : 'upload',
+                    'bunny_id' => $is_bunny ? (string) $slide['bunny_id'] : '',
                     'id' => isset($slide['id']) ? intval($slide['id']) : 0,
-                    'url' => $slide['url'],
+                    'url' => $url,
                     'thumbnail_url' => $thumb,
                     'alt' => isset($slide['alt']) ? $slide['alt'] : '',
                 );
@@ -290,6 +332,8 @@ class IGP_Grid_Model {
         if (empty($media) && !empty($cell['image_url'])) {
             $media[] = array(
                 'type' => 'image',
+                'source' => 'upload',
+                'bunny_id' => '',
                 'id' => isset($cell['image_id']) ? intval($cell['image_id']) : 0,
                 'url' => $cell['image_url'],
                 'thumbnail_url' => !empty($cell['thumbnail_url']) ? $cell['thumbnail_url'] : $cell['image_url'],

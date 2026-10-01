@@ -95,6 +95,11 @@ class Instagram_Grid_Preview {
          */
         require_once IGP_PLUGIN_DIR . 'includes/class-igp-grid-model.php';
 
+        /**
+         * The class responsible for Bunny Stream integration.
+         */
+        require_once IGP_PLUGIN_DIR . 'includes/class-igp-bunny.php';
+
         $this->loader = new IGP_Loader();
     }
 

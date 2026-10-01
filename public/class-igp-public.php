@@ -190,6 +190,14 @@ class IGP_Public {
      */
     private static function render_cell($post, $index, $columns = 3) {
         $first = $post['media'][0];
+
+        if (isset($first['source']) && 'bunny' === $first['source']) {
+            $poster = IGP_Bunny::resolve_poster($first);
+            if ($poster) {
+                $first['thumbnail_url'] = $poster;
+            }
+        }
+
         $thumb = $first['thumbnail_url'];
         $alt = $first['alt'];
 

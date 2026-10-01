@@ -8,6 +8,7 @@ A WordPress/ClassicPress plugin that turns your media library into a public, Ins
 - **Post Viewer** - Click a tile to open a slideshow with arrows, dots and keyboard navigation
 - **Carousels** - Add multiple images to a single post
 - **Video Posts** - Add video slides that play in the viewer, with a separate poster image
+- **Bunny Stream** - Use Bunny Stream videos (by GUID) instead of uploaded files; plays as HLS with an MP4 fallback
 - **Profile Details** - Avatar, username, display name, bio, website, followers and following
 - **Visual Grid Editor** - Drag-and-drop interface for arranging posts
 - **Media Type Badges** - Carousel, Reel and Video badges shown in the tile corner
@@ -79,6 +80,14 @@ Clicking a tile opens the Instagram-style post viewer:
 
 - **Carousel** - select two or more images for a single post
 - **Video** - add a video from the media library. WordPress/ClassicPress do not generate video posters, so open the post and use the camera button on the video slide to choose a poster image. The poster is used in the grid tile and viewer.
+
+### Bunny Stream
+
+If the site has Bunny Stream configured (the shared `bunny_stream_shortcodes_options`, as used by the Bunny Stream Shortcodes plugin/theme), posts can use Bunny videos instead of uploaded files:
+
+- In the post editor, click **Add Bunny video**. When the theme provides the `slayBunnyPicker` modal it is used; otherwise paste a video ID or Bunny URL.
+- Bunny videos play as HLS (hls.js, loaded only when needed) with an MP4 fallback, and use Bunny's thumbnail as the poster.
+- Only CDN URLs (and short-lived signed tokens when CDN security is enabled) are output — the API key is never exposed.
 
 ### Managing Profiles
 

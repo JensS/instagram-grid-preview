@@ -83,6 +83,11 @@ class IGP_Admin {
         if (strpos($screen->id, 'instagram-grid') !== false) {
             // Enqueue media uploader
             wp_enqueue_media();
+
+            // Reuse the theme's Bunny Stream video picker when it is available.
+            if (function_exists('slay_enqueue_bunny_picker')) {
+                slay_enqueue_bunny_picker();
+            }
             
             // Enqueue Sortable.js for drag and drop with SRI hash
             wp_enqueue_script(
@@ -431,21 +436,38 @@ class IGP_Admin {
      * @return   array|null    Sanitized slide or null when invalid
      */
     private function sanitize_media_slide($slide) {
-        if (!is_array($slide) || empty($slide['url'])) {
+        if (!is_array($slide)) {
             return null;
         }
 
-        $url = esc_url_raw($slide['url']);
-        if (empty($url)) {
-            return null;
-        }
+        $source = (isset($slide['source']) && 'bunny' === $slide['source']) ? 'bunny' : 'upload';
+        $bunny_id = '';
+        $url = '';
 
-        $type = (isset($slide['type']) && 'video' === $slide['type']) ? 'video' : 'image';
-        // Videos need an explicit poster image; don't fall back to the file.
-        $thumb = !empty($slide['thumbnail_url']) ? esc_url_raw($slide['thumbnail_url']) : ('video' === $type ? '' : $url);
+        if ('bunny' === $source) {
+            $bunny_id = IGP_Bunny::video_id_from_input(isset($slide['bunny_id']) ? $slide['bunny_id'] : '');
+            if (empty($bunny_id)) {
+                return null;
+            }
+            $type = 'video';
+            $thumb = !empty($slide['thumbnail_url']) ? esc_url_raw($slide['thumbnail_url']) : '';
+        } else {
+            if (empty($slide['url'])) {
+                return null;
+            }
+            $url = esc_url_raw($slide['url']);
+            if (empty($url)) {
+                return null;
+            }
+            $type = (isset($slide['type']) && 'video' === $slide['type']) ? 'video' : 'image';
+            // Videos need an explicit poster image; don't fall back to the file.
+            $thumb = !empty($slide['thumbnail_url']) ? esc_url_raw($slide['thumbnail_url']) : ('video' === $type ? '' : $url);
+        }
 
         return array(
             'type' => $type,
+            'source' => $source,
+            'bunny_id' => $bunny_id,
             'id' => isset($slide['id']) ? intval($slide['id']) : 0,
             'url' => $url,
             'thumbnail_url' => $thumb,

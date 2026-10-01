@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents when working with code in this r
 This is a WordPress/ClassicPress plugin that turns the media library into public, Instagram-style profile pages. Each grid (profile) is served at its own URL (`/instagram-grid/{id}`) with a standalone, mobile-responsive layout and a post viewer with carousel/video slideshows.
 
 **Plugin Details:**
-- **Version:** 1.2.0
+- **Version:** 1.3.0
 - **Requires:** PHP 7.4+, WordPress 5.0+ or ClassicPress 1.0+
 - **Text Domain:** instagram-grid-preview
 - **Architecture:** WordPress Plugin Boilerplate pattern
@@ -76,6 +76,8 @@ The plugin follows WordPress Plugin Boilerplate architecture with clean separati
 
 **Post Viewer:** `public/js/igp-profile.js` + `public/css/igp-profile.css` — opens a modal with a slideshow (images + video, arrows/dots/keyboard), caption and like/comment counts. No shortcode is provided (removed in 1.2.0).
 
+**Bunny Stream:** `includes/class-igp-bunny.php` (`IGP_Bunny`) lets a post slide be a Bunny video (`source: "bunny"`, `bunny_id: "<GUID>"`) instead of an uploaded file. It reads the shared `bunny_stream_shortcodes_options` (library id, CDN hostname, optional CDN security key) and reuses the theme's `Slay_Element_Bunny` URL builders when available (otherwise it builds/signs URLs itself). Playback is HLS with an MP4 fallback; hls.js is loaded from jsdelivr (with SRI) only on profile pages that contain a Bunny slide. The admin "Add Bunny video" button uses the theme's `slayBunnyPicker` modal (enqueued via `slay_enqueue_bunny_picker()`) and falls back to a GUID/URL prompt. **Never output `api_key`/`cdn_security_key`** — only CDN URLs and short-lived signed tokens.
+
 ### Database Schema
 
 Table: `wp_igp_grids` (prefix varies)
@@ -134,6 +136,8 @@ The grid data is stored as a JSON object where:
 - Located in: `includes/class-igp-activator.php`
 - Creates database table on activation using `dbDelta()`
 - Handles schema migrations (e.g., `aspect_ratio` added in v1.1.0, `profile_data` added in v1.2.0)
+- `IGP_Activator::maybe_upgrade()` runs migrations on `plugins_loaded` when `igp_db_version` is behind `IGP_DB_VERSION` — required because `register_activation_hook()` does **not** fire on auto-updates
+- `IGP_Grid_Model::has_column()` guards writes so a not-yet-migrated install never fails to save
 - Sets custom capabilities for Administrator and Editor roles
 - Flushes rewrite rules
 
@@ -239,6 +243,8 @@ Defined in `instagram-grid-preview.php`:
 ### External Dependencies
 
 - **Sortable.js** (v1.15.0) - Loaded from CDN (jsdelivr) with SRI integrity hash
+- **hls.js** (v1.5.17) - Loaded from CDN (jsdelivr) with SRI integrity hash, only on profile pages containing a Bunny slide
+- **Bunny Stream** - Optional; shares the `bunny_stream_shortcodes_options` settings
 - **WordPress Media Library** - Native WordPress media uploader via `wp.media()`
 - **Plugin Update Checker** (v5.5) - YahnisElsts library for automatic updates from GitHub
 
@@ -260,6 +266,7 @@ instagram-grid-preview/
 │   ├── class-instagram-grid-preview.php (core plugin class)
 │   ├── class-igp-loader.php (hook manager)
 │   ├── class-igp-grid-model.php (database operations)
+│   ├── class-igp-bunny.php (Bunny Stream integration)
 │   ├── class-igp-activator.php (activation tasks)
 │   ├── class-igp-deactivator.php (deactivation tasks)
 │   └── class-igp-i18n.php (internationalization)

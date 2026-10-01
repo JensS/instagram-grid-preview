@@ -4,7 +4,7 @@ Tags: instagram, grid, gallery, images, media
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,16 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 
 == Changelog ==
 
+= 1.3.0 - 2026-10-01 =
+
+**New Features**
+* Bunny Stream support: add Bunny videos to posts instead of uploading files
+* Reuses the site's Bunny Stream settings and the theme's Bunny video picker
+* Bunny videos play as HLS with an MP4 fallback (hls.js is loaded only on pages that need it)
+
+**Fixed**
+* Fixed "Failed to save grid" on existing installs: the `profile_data` column migration now runs automatically after a plugin update (it previously only ran on activation), and saves no longer fail if the column is missing
+
 = 1.2.1 - 2026-10-01 =
 
 **Fixed**
@@ -215,6 +225,9 @@ Yes! The plugin is fully compatible with ClassicPress 1.0 and higher.
 * ClassicPress compatibility
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Adds Bunny Stream video support. Also fixes a database migration bug that could cause "Failed to save grid" after updating on existing installs. Recommended for all users.
 
 = 1.2.1 =
 Bug fix for a mediaelement error when setting video poster images, plus responsive image loading and blue @mention highlighting in captions.

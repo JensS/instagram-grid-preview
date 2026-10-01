@@ -3,7 +3,7 @@
  * Plugin Name: Instagram Grid Preview
  * Plugin URI: https://jenssage.com/plugins/instagram-grid-preview
  * Description: Turn your WordPress media library into public, Instagram-style profile pages with a carousel/video post viewer.
- * Version: 1.2.1
+ * Version: 1.3.0
  * Author: Jens Sage
  * Author URI: https://jenssage.com
  * License: GPL v2 or later
@@ -26,7 +26,15 @@ if (!defined('WPINC')) {
 /**
  * Currently plugin version.
  */
-define('IGP_VERSION', '1.2.1');
+define('IGP_VERSION', '1.3.0');
+
+/**
+ * Database schema version.
+ *
+ * Bump this whenever the table schema changes so existing installs run the
+ * migration on update (the activation hook does not fire on auto-updates).
+ */
+define('IGP_DB_VERSION', '1.2.2');
 
 /**
  * Plugin directory path
@@ -61,6 +69,18 @@ function deactivate_instagram_grid_preview() {
 
 register_activation_hook(__FILE__, 'activate_instagram_grid_preview');
 register_deactivation_hook(__FILE__, 'deactivate_instagram_grid_preview');
+
+/**
+ * Run schema migrations after a plugin update.
+ *
+ * The activation hook only fires on activation, so updates delivered by the
+ * Plugin Update Checker must migrate here instead.
+ */
+function igp_maybe_upgrade_database() {
+    require_once IGP_PLUGIN_DIR . 'includes/class-igp-activator.php';
+    IGP_Activator::maybe_upgrade();
+}
+add_action('plugins_loaded', 'igp_maybe_upgrade_database', 5);
 
 /**
  * The core plugin class
